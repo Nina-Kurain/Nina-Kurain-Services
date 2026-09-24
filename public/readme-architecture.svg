@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" width="100%" height="100%">
+  <defs>
+    <linearGradient id="archBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0e050e"/>
+      <stop offset="100%" stop-color="#180718"/>
+    </linearGradient>
+
+    <linearGradient id="boxGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255, 255, 255, 0.08)"/>
+      <stop offset="100%" stop-color="rgba(255, 255, 255, 0.02)"/>
+    </linearGradient>
+
+    <linearGradient id="edgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f38020"/>
+      <stop offset="100%" stop-color="#faad3f"/>
+    </linearGradient>
+
+    <linearGradient id="d1Grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+
+    <linearGradient id="driveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4285f4"/>
+      <stop offset="100%" stop-color="#34a853"/>
+    </linearGradient>
+
+    <linearGradient id="payGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#e56b83"/>
+      <stop offset="100%" stop-color="#a92f49"/>
+    </linearGradient>
+
+    <style>
+      @keyframes dashAnim {
+        to { stroke-dashoffset: -40; }
+      }
+      .flowing-line {
+        stroke-dasharray: 8 6;
+        animation: dashAnim 1.8s linear infinite;
+      }
+      .box-title { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 15px; font-weight: 700; fill: #ffffff; }
+      .box-desc { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11px; fill: #a88e9c; }
+      .kicker-tag { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+    </style>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1200" height="420" rx="16" fill="url(#archBg)"/>
+  <rect x="1" y="1" width="1198" height="418" rx="15" fill="none" stroke="rgba(229, 107, 131, 0.25)" stroke-width="1"/>
+
+  <!-- Title Header -->
+  <text x="600" y="44" text-anchor="middle" font-family="'Cinzel', Georgia, serif" font-size="18" font-weight="700" fill="#dfb15b" letter-spacing="0.2em">
+    SYSTEM ARCHITECTURE &amp; DATA PIPELINE
+  </text>
+  <text x="600" y="65" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#a88e9c">
+    Zero-Cold-Start V8 Workers • Distributed Edge SQLite • Signed Media Proxy • Real-time Webhooks
+  </text>
+
+  <!-- Section 1: Member & Admin Client (Left) -->
+  <g transform="translate(60, 110)">
+    <rect width="210" height="240" rx="12" fill="url(#boxGrad)" stroke="rgba(229, 107, 131, 0.4)" stroke-width="1.5"/>
+    <text x="20" y="32" fill="#e56b83" class="kicker-tag">PRESENTATION LAYER</text>
+    <text x="20" y="58" class="box-title">Client Experience</text>
+    <text x="20" y="78" class="box-desc">• Next.js 16 Responsive Web</text>
+    <text x="20" y="96" class="box-desc">• VIP Feed &amp; Fullscreen Reels</text>
+    <text x="20" y="114" class="box-desc">• Mobile &amp; Desktop PWA</text>
+    <text x="20" y="132" class="box-desc">• Creator Studio Editor</text>
+    <text x="20" y="150" class="box-desc">• Fabric.js Canvas Engine</text>
+    <text x="20" y="168" class="box-desc">• Member Referral Portal</text>
+
+    <rect x="20" y="194" width="170" height="28" rx="6" fill="rgba(229, 107, 131, 0.15)"/>
+    <text x="105" y="212" text-anchor="middle" fill="#ffb3c5" font-family="sans-serif" font-size="11" font-weight="600">Pure Vanilla CSS &amp; Radix</text>
+  </g>
+
+  <!-- Flow Arrows 1 -> 2 -->
+  <line x1="270" y1="230" x2="350" y2="230" stroke="#e56b83" stroke-width="2" class="flowing-line"/>
+  <polygon points="350,225 360,230 350,235" fill="#e56b83"/>
+
+  <!-- Section 2: Cloudflare Edge Compute (Center) -->
+  <g transform="translate(360, 95)">
+    <rect width="270" height="270" rx="14" fill="url(#boxGrad)" stroke="url(#edgeGrad)" stroke-width="2"/>
+    <text x="24" y="34" fill="#f38020" class="kicker-tag">CORE EDGE EXECUTION</text>
+    <text x="24" y="62" class="box-title" font-size="17">Cloudflare Workers</text>
+    <text x="24" y="86" class="box-desc">• 0ms Cold Start Serverless</text>
+    <text x="24" y="106" class="box-desc">• Vinext RSC + Edge API Routes</text>
+    <text x="24" y="126" class="box-desc">• HMAC Signed Media Token Validation</text>
+    <text x="24" y="146" class="box-desc">• Sliding-Window Rate Limiting</text>
+    <text x="24" y="166" class="box-desc">• Scheduled Grace Reminder Cron</text>
+    <text x="24" y="186" class="box-desc">• Native ISO Model-2 QR Engine</text>
+    <text x="24" y="206" class="box-desc">• D1 Automatic Migration Loader</text>
+
+    <rect x="24" y="224" width="222" height="30" rx="6" fill="rgba(243, 128, 32, 0.15)"/>
+    <text x="135" y="243" text-anchor="middle" fill="#faad3f" font-family="sans-serif" font-size="11.5" font-weight="700">Sub-10ms Edge Latency</text>
+  </g>
+
+  <!-- Flow Arrows 2 -> 3 (Split into D1, Storage, Payments) -->
+  <!-- Arrow to D1 -->
+  <path d="M 630 150 L 730 150" fill="none" stroke="#38bdf8" stroke-width="2" class="flowing-line"/>
+  <polygon points="730,145 740,150 730,155" fill="#38bdf8"/>
+
+  <!-- Arrow to Drive -->
+  <path d="M 630 230 L 730 230" fill="none" stroke="#4ade80" stroke-width="2" class="flowing-line"/>
+  <polygon points="730,225 740,230 730,235" fill="#4ade80"/>
+
+  <!-- Arrow to Payments -->
+  <path d="M 630 310 L 730 310" fill="none" stroke="#e56b83" stroke-width="2" class="flowing-line"/>
+  <polygon points="730,305 740,310 730,315" fill="#e56b83"/>
+
+  <!-- Section 3A: Cloudflare D1 (Database) -->
+  <g transform="translate(740, 95)">
+    <rect width="400" height="76" rx="10" fill="url(#boxGrad)" stroke="url(#d1Grad)" stroke-width="1.5"/>
+    <text x="20" y="24" fill="#38bdf8" class="kicker-tag">DISTRIBUTED DATABASE</text>
+    <text x="20" y="46" class="box-title">Cloudflare D1 (SQLite)</text>
+    <text x="20" y="64" class="box-desc">Zero-network SQL • Telemetry Capacity • Instant 1-Click Clean</text>
+  </g>
+
+  <!-- Section 3B: Google Drive OAuth Media -->
+  <g transform="translate(740, 185)">
+    <rect width="400" height="76" rx="10" fill="url(#boxGrad)" stroke="url(#driveGrad)" stroke-width="1.5"/>
+    <text x="20" y="24" fill="#34a853" class="kicker-tag">PRIVATE MEDIA VAULT</text>
+    <text x="20" y="46" class="box-title">Google Drive API (OAuth 2.0)</text>
+    <text x="20" y="64" class="box-desc">AES-GCM-256 Tokens • Range Streaming • Trash Purge</text>
+  </g>
+
+  <!-- Section 3C: Payments & QR Engine -->
+  <g transform="translate(740, 275)">
+    <rect width="400" height="76" rx="10" fill="url(#boxGrad)" stroke="url(#payGrad)" stroke-width="1.5"/>
+    <text x="20" y="24" fill="#e56b83" class="kicker-tag">MONETIZATION &amp; SETTLEMENT</text>
+    <text x="20" y="46" class="box-title">Razorpay Live + Direct NPCI UPI</text>
+    <text x="20" y="64" class="box-desc">0% UPI QR Links • Webhook Signatures • Auto-Grace Periods</text>
+  </g>
+</svg>
