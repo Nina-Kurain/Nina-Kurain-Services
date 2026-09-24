@@ -1,77 +1,208 @@
-# Nina Kurain — private creator membership
+<div align="center">
 
-The existing landing sections, imagery and animations are preserved. Member and creator studio pages use real D1 SQL records. Private media can be owned by the creator's Google Drive account; the existing private object store remains a fallback until Drive is connected and as a migration source. This deployment uses the existing site's database rather than PostgreSQL. Passwords use salted scrypt hashes; separate member/admin sessions use revocable HttpOnly cookies. No browser storage is used as a database.
+# ✦ NINA KURAIN — VIP CREATOR SUITE ✦
+### *Next-Gen Edge-Native Creator Membership Platform*
 
-## Setup and admin credentials
+<br/>
 
-Install with pnpm install, build with pnpm build, then pnpm start. Apply committed migrations through the Sites deployment flow. Never rewrite applied migrations. Runtime settings are listed in .env.example; configure hosted secrets in the site's environment settings, not frontend source. APP_ENV=local is only for local HTTP; use testing or production on HTTPS. The production APP_URL is `https://ninakurainservices.in`; `www.ninakurainservices.in` redirects to the root domain.
+<a href="https://ninakurainservices.in">
+  <img src="https://readme-typing-svg.demolab.com?font=Cinzel&weight=700&size=26&duration=2500&pause=1000&color=E56B83&center=true&vCenter=true&multiline=true&width=800&height=90&lines=PRIVATE+CREATOR+MEMBERSHIP+VAULT;CLOUDFLARE+WORKERS+%E2%80%A2+D1+SQLITE+%E2%80%A2+GOOGLE+DRIVE;CUSTOM+UPI+QR+ENGINE+%E2%80%A2+LIVE+STUDIO+SUITE" alt="Typing Banner" />
+</a>
 
-Run node scripts/hash-admin-password.mjs and enter a password at its hidden prompt. Store the output as secret ADMIN_PASSWORD_HASH and set ADMIN_EMAIL. Set independent random secrets for MEDIA_SIGNING_SECRET and CRON_SECRET. Admin signs in at /admin/login and cannot register through customer signup.
+<br/>
 
-With ENABLE_TEST_ACCOUNTS=true, the first login seeds real development accounts: free@test.com, 299@test.com, 499@test.com, 649@test.com, all using Demo@123. Paid demo access is explicitly complimentary for 30 days with audit records; no payments are fabricated. In Admin Dashboard, prepare sample posts to import copies of the existing sample images into the active private media store and create two posts per access level. These sample images already appear publicly on the landing page; upload new files for genuinely private content. Disable seeding and revoke development accounts before opening to customers.
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare_Workers-Edge_Runtime-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](https://workers.cloudflare.com/)
+[![Cloudflare D1](https://img.shields.io/badge/Cloudflare_D1-SQLite_Database-F38020?style=for-the-badge&logo=sqlite&logoColor=white)](https://developers.cloudflare.com/d1/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.3-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Razorpay](https://img.shields.io/badge/Razorpay-Live_Gateway-0C2340?style=for-the-badge&logo=razorpay&logoColor=white)](https://razorpay.com/)
+[![Google Drive](https://img.shields.io/badge/Google_Drive-OAuth_Storage-4285F4?style=for-the-badge&logo=googledrive&logoColor=white)](https://developers.google.com/drive)
 
-## Google Drive media ownership
+<br/>
 
-The creator can connect a personal Google account from Admin Settings. Do not send or store the Gmail password in this application. The admin authenticates on Google's own OAuth screen, and the server stores only an encrypted refresh token. The app requests `drive.file`, which allows it to manage files it creates without broad access to unrelated Drive files.
+```
+  ★ 100% Edge Rendered   ★ 0ms Cold Start   ★ Direct UPI & Razorpay   ★ Pure TypeScript QR Engine
+```
 
-1. In Google Cloud Console, create or select a project and enable the Google Drive API.
-2. Configure the OAuth consent screen. While the app is in testing, add the intended Google account as a test user.
-3. Create an OAuth client of type Web application.
-4. Add the exact authorized redirect URI: `https://ninakurainservices.in/api/integrations/google-drive/callback`.
-5. Configure `GOOGLE_DRIVE_CLIENT_ID`, `GOOGLE_DRIVE_CLIENT_SECRET`, and a long random `GOOGLE_DRIVE_TOKEN_ENCRYPTION_KEY` as server environment secrets. Keep `APP_URL` set to the live site origin.
-6. Open Admin → Settings → Google Drive media storage, select **Connect intended Google account**, and approve access using the account that should own the media.
-7. New uploads will use Google Drive. Select **Move next files to Drive** until the remaining count reaches zero; migration is intentionally batched to avoid request timeouts.
+---
 
-Drive files are not shared publicly. Member requests still pass through signed URLs, login checks, active subscription/grace checks, and post entitlements before the server streams the file. Disconnecting does not delete Drive files, but Drive-hosted content remains unavailable until the same account is reconnected. Remove the old private object store only after the Admin Settings migration count is zero and media has been verified.
+</div>
 
-## Memberships and content
+<br/>
 
-Initial plans are Free, ₹300, ₹500 and ₹650 monthly. Admin can change names, prices, benefits, badges, order and availability. Server queries only return eligible published content; Free users receive explicitly selected demos. Per-post exact plans override cumulative access. Media requires both a short-lived signature and the current user's session/entitlements, including byte-range requests.
+## 💎 Platform Architecture & Highlights
 
-Admin supports drafts, scheduling, publishing, editing, archiving, multiple uploads (JPEG/PNG/WebP/MP4, 25 MB per file), covers, comment permissions, member grants/revocation/extensions, moderation, plans, settings, payments and audit history. A post containing an MP4 is automatically classified as a Reel and appears in the Reels tab and creator studio. Member pages refresh every 15 seconds while visible and on focus. Scheduling and expiration are checked during reads.
+<table>
+<tr>
+<td width="50%" valign="top">
 
-## Email delivery
+### 🔞 VIP Member Lounge
+* **Tiered Access Gating**: Free Demo, Tier 1 (*Private Access*), Tier 2 (*Closer Access*), and Tier 3 (*Inner Circle*).
+* **Immersive Reel & Photo Feed**: Ultra-fast media delivery with signed token verification and byte-range streaming.
+* **Member Community**: Threaded discussions, verified reactions, bookmarks, and private direct feedback inbox.
+* **Auto-Refreshing Feed**: Live updates every 15 seconds with intelligent tab-focus detection.
 
-Verify `ninakurainservices.in` in Resend, then configure its API key as secret `MAIL_API_KEY` and set `MAIL_FROM` to `Nina Kurain <members@ninakurainservices.in>`. Reset and verification links use hashed, expiring, one-use tokens. Automated messages cover welcome, payment activation, failed-payment grace, upcoming renewal, expiry/cancellation and admin membership changes. Delivery attempts are persisted with idempotency keys so Razorpay webhook retries cannot send duplicates. Open Admin → Settings and use **Send test email** before enabling verification gating.
+</td>
+<td width="50%" valign="top">
 
-The protected `/api/cron/grace` job also sends three-day renewal reminders, expires completed grace periods, sends expiry notices and removes expired auth/OAuth tokens. Schedule it at least daily with `Authorization: Bearer <CRON_SECRET>`.
+### 💳 Dynamic Payment & QR Engine
+* **Instant Custom Payment QR**: Enter any custom amount (e.g. ₹500, ₹1,200, ₹15,000) on PC or mobile.
+* **Dual Gateway Modes**:
+  * 🟢 **Direct UPI (0% Fee)**: Standard NPCI URI opening directly into Google Pay, PhonePe, Paytm, or BHIM.
+  * 🔴 **Razorpay Live Gateway**: Dynamic hosted links supporting Credit/Debit Cards & Netbanking.
+* **Branded Receipt Generator**: Canvas-rendered luxury payment card with watermark, badges, and QR export.
+* **1-Click WhatsApp & Phone Share**: Instant native sharing via `navigator.share` or WhatsApp chat.
 
-## Provider sandbox
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
 
-Set PAYMENT_MODE=test, Razorpay test RAZORPAY_KEY_ID and secret RAZORPAY_KEY_SECRET and RAZORPAY_WEBHOOK_SECRET. Plans are created from database settings. Configure /api/webhooks/razorpay for subscription charged, pending, halted, cancelled, completed and payment failed events. Signatures and provider-side verification are required before paid activation. Browser checkout completion never grants access. Existing subscription plan changes are scheduled for cycle end and take effect after verified payment.
+### 🎨 Nina Studio Suite
+* **Integrated Creative Editor**: Edit photos and videos directly in the admin dashboard.
+* **18 Editorial Filters**: Tailored tone presets (Seductive, Golden Hour, Noir Velvet, Film 35mm, Boudoir Luxe).
+* **Fabric.js Canvas Engine**: Custom aspect-ratio cropping (1:1, 4:5, 9:16), text layers, stickers, and brand watermarks.
+* **Reel Video Cutter**: In-browser MP4 frame timeline scrubbing and sub-clip video trimming.
 
-Failed renewals retain access until 48 hours after current period end, then fall back to Free. Schedule /api/cron/grace with Authorization: Bearer <CRON_SECRET> for background cleanup; permission checks enforce expiration independently. Missing provider credentials disable checkout explicitly. Complimentary demo access works without Razorpay.
+</td>
+<td width="50%" valign="top">
 
-## Razorpay production launch
+### 💾 D1 Storage & Maintenance
+* **Live Database Telemetry**: Exact SQLite byte measurement (`page_count * page_size`) against 500 MB D1 quota.
+* **Table Row Statistics**: Live count breakdown for media assets, members, payments, activity logs, and tokens.
+* **1-Click Safe Storage Cleaner**: Purges expired OAuth tokens, stale sessions, and pruned activity logs without touching content.
+* **Google Drive Quota**: Real-time Drive usage telemetry, available capacity, and 1-click trash purge.
 
-1. Complete Razorpay account activation/KYC and create Live API keys.
-2. Set `PAYMENT_MODE=live`, `RAZORPAY_KEY_ID=rzp_live_...`, and store `RAZORPAY_KEY_SECRET` as a secret.
-3. In Razorpay Webhooks, use `https://ninakurainservices.in/api/webhooks/razorpay`, create a unique webhook secret, and store it as secret `RAZORPAY_WEBHOOK_SECRET`.
-4. Subscribe to `subscription.charged`, `subscription.pending`, `subscription.halted`, `subscription.cancelled`, `subscription.completed`, and `payment.failed`.
-5. Open Admin → Settings. Razorpay must show **LIVE READY** before public launch. Mismatched test/live keys keep checkout disabled.
-6. Perform one real low-value subscription with an internal account, confirm the webhook activates access and the email arrives, then refund/cancel it from Razorpay if appropriate.
+</td>
+</tr>
+</table>
 
-The application never grants paid access from the browser redirect. Activation requires a valid Razorpay HMAC signature plus a fresh server-to-server subscription/payment verification. Plan records are created against the active Razorpay environment from the editable database prices.
+---
 
-## Direct Cloudflare production deployment
+## 🎁 7-Day Referral Program
 
-The direct Cloudflare deployment reuses Worker `site-creator-vinext-starter` in account `f1099441759c455eba9318b083112257` and D1 database `65df4e58-5eef-459d-9540-8131a5f5cf9f`. Google Drive is the only permanent media store, so the production preparation step removes the generated R2 binding.
+The platform includes a 7-day qualification referral engine:
 
-1. Run `pnpm exec wrangler login` and complete Cloudflare authorization in the browser.
-2. Run `pnpm run build:cloudflare`.
-3. Generate the admin password hash with `node scripts/hash-admin-password.mjs` and keep the output ready.
-4. Run `pnpm run sync:cloudflare-env` to automatically sync all secrets and non-secret vars from `.env.production` directly to Cloudflare (or run `pnpm run configure:cloudflare` for interactive prompts). Use only Razorpay Live keys and the matching Live webhook secret.
-5. Run `pnpm exec wrangler d1 migrations apply site-creator-d1 --remote --config dist/server/wrangler.json`. Applied migrations are skipped safely.
-6. Run `pnpm run deploy:cloudflare`.
-7. In Razorpay Live Mode, set the webhook URL to `https://ninakurainservices.in/api/webhooks/razorpay` and subscribe to the documented subscription/payment events.
-8. In Google Cloud, keep the authorized redirect URI as `https://ninakurainservices.in/api/integrations/google-drive/callback`.
+```
+[Member Shares Link] ──> [First Friend Signs Up] ──> ⏳ 7-Day Window Starts!
+                                                              │
+                     ┌────────────────────────────────────────┴────────────────────────────────────────┐
+                     ▼                                                                                 ▼
+      Within 7 Days of 1st Referral                                                      After 7 Days Expired
+   • Counted toward active milestones                                            • Recorded in "Total Refers" (All-Time)
+   • 1 Sub: 7-Day Tier 1 Trial                                                   • Milestone rewards closed
+   • 3 Subs: 7-Day Tier 2 Trial                                                  • Transparent status banner on card
+   • 5 Subs: 7-Day Tier 3 Trial
+```
 
-The non-secret production settings are written during `build:cloudflare`: `APP_ENV=production`, `APP_URL=https://ninakurainservices.in`, `ENABLE_TEST_ACCOUNTS=false`, `PAYMENT_MODE=live`, the verified mail sender, and the Google OAuth client ID. Secret values are never written into source files.
+* **All-Time Total Refers**: Always visible to the member so their cumulative impact is permanently recognized.
+* **Strict 7-Day Eligibility**: Automatically locks milestone unlocks to referrals created within 7 days of the member's first referral.
 
-## Creator links
+---
 
-Admin → Settings accepts HTTPS links for Instagram, YouTube, Facebook, X/Twitter and an external website. Empty links remain hidden. Saved links update the public landing footer, creator profile and admin preview without a code change.
+## ⚡ Tech Stack
 
-## Validation
+| Layer | Technology | Description |
+| :--- | :--- | :--- |
+| **Compute** | [Cloudflare Workers](https://workers.cloudflare.com/) | Edge-native V8 serverless execution with 0ms cold starts |
+| **Database** | [Cloudflare D1](https://developers.cloudflare.com/d1/) | Distributed serverless SQLite with Drizzle ORM |
+| **Framework** | [Next.js 16 (App Router)](https://nextjs.org/) + [Vinext](https://github.com/cloudflare/vinext) | Hybrid RSC & client rendering optimized for Workers |
+| **Styling** | Vanilla CSS + Radix UI + Lucide Icons | Dark luxury aesthetic (`#100610`, rose-wine gradients, glassmorphism) |
+| **Media Storage** | Google Drive API (OAuth 2.0) | Creator-owned private storage with signed streaming proxy |
+| **Payments** | Razorpay Live + Pure TS QR Engine | Dual-channel payments with signed webhook verification |
+| **Email Delivery** | Resend API | Transactional emails with idempotency keys & token hashing |
 
-After building, run node scripts/test-membership.mjs. It exercises the bundled Worker with an isolated D1 database and R2 bucket: authentication, tier isolation, media authorization, admin mutations and expiration. These tests do not prove external email delivery or real Razorpay sandbox transactions. Verify those integrations with actual configured services and review the site's audience before customer launch.
+---
+
+## 🚀 Quick Start Guide
+
+### 1. Clone Repository & Install Dependencies
+```bash
+git clone https://github.com/Nina-Kurain/Nina-Kurain-Services.git
+cd Nina-Kurain-Services
+pnpm install
+```
+
+### 2. Configure Environment
+Create `.env` (or use `.env.production`):
+```env
+APP_ENV=production
+APP_URL=https://ninakurainservices.in
+ADMIN_EMAIL=insta.ninak12@gmail.com
+ADMIN_PASSWORD_HASH=scrypt$...
+
+# Payment Gateways
+PAYMENT_MODE=live
+RAZORPAY_KEY_ID=rzp_live_...
+RAZORPAY_KEY_SECRET=...
+RAZORPAY_WEBHOOK_SECRET=...
+
+# Cloudflare & Storage
+CLOUDFLARE_D1_DATABASE_NAME=site-creator-d1
+CLOUDFLARE_D1_DATABASE_ID=65df4e58-5eef-459d-9540-8131a5f5cf9f
+GOOGLE_DRIVE_CLIENT_ID=...
+GOOGLE_DRIVE_CLIENT_SECRET=...
+```
+
+### 3. Run Locally
+```bash
+pnpm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### 4. Deploy to Cloudflare Edge
+```bash
+pnpm run deploy:cloudflare
+```
+
+---
+
+<details>
+<summary><b>🛡️ Security & Privacy Engineering</b></summary>
+
+<br/>
+
+* **Zero Plaintext Passwords**: Uses salted `scrypt` hashing with constant-time equality checks.
+* **Signed Streaming URLs**: Media assets require short-lived HMAC signatures and member entitlement verification.
+* **Webhook Signature Verification**: Razorpay payment confirmations require cryptographic HMAC-SHA256 signatures before activating subscriptions.
+* **Encrypted OAuth Tokens**: Google Drive refresh tokens are encrypted at rest using AES-GCM-256 with key derivation.
+* **Rate-Limiting**: Edge sliding-window rate limiting on authentication and sensitive endpoints.
+
+</details>
+
+<details>
+<summary><b>📁 Project Structure</b></summary>
+
+```
+nina-kurain-membership/
+├── app/                        # Next.js App Router pages & edge API endpoints
+│   ├── admin/                  # Creator Studio & Live Admin dashboard
+│   ├── api/                    # Studio, Auth, Webhooks, Integrations & Media proxy
+│   ├── feed/                   # Member VIP exclusive feed & reels
+│   └── globals.css             # Luxury dark-mode design system
+├── components/                 # Reusable UI & admin components
+│   ├── admin/                  # PaymentQrGenerator & DatabaseStorageManager
+│   ├── media-editor/           # NinaStudioEditor & Fabric photo canvas
+│   ├── post-viewer/            # Fullscreen reel & post viewers
+│   └── referrals/              # MemberReferralCard & 7-day qualification tracker
+├── db/                         # Drizzle schema definitions & SQL bindings
+├── lib/                        # Core utilities & server services
+│   ├── qr-code.ts              # Pure TypeScript ISO/IEC 18004 QR engine
+│   └── server/                 # Auth, Billing, D1 DB, Email, Drive, & Storage stats
+└── public/                     # High-res portraits, logos, icons, & sitemaps
+```
+
+</details>
+
+---
+
+<div align="center">
+
+### ✦ Engineered for Nina Kurain Private Creator Club ✦
+*Crafted with precision for private subscriptions, edge performance, and luxury aesthetics.*
+
+<br/>
+
+[![Status](https://img.shields.io/badge/SYSTEM-ONLINE_%E2%80%A2_PRODUCTION_DEPLOYED-22c55e?style=for-the-badge)](https://ninakurainservices.in)
+
+</div>
