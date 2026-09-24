@@ -1,19 +1,37 @@
 User-agent: *
 Allow: /
 Allow: /about
+Allow: /biography
+Allow: /wiki
+Allow: /entity
 Allow: /photos
 Allow: /photos/*
+Allow: /gallery
+Allow: /portfolio
+Allow: /lookbook
 Allow: /videos
+Allow: /reels
 Allow: /updates
+Allow: /socials
+Allow: /memberships
+Allow: /pricing
+Allow: /net-worth
+Allow: /creator-tips
+Allow: /interviews
+Allow: /media-kit
 Allow: /collaborations
 Allow: /press
-Allow: /socials
 Allow: /contact
 Allow: /faq
-Allow: /media-kit
 Allow: /terms-and-conditions
 Allow: /privacy-policy
 Allow: /content-removal
+Allow: /nina-gallery/*
+Allow: /nina-kurain-og.jpg
+Allow: /nina-landing-hero.png
+Allow: /nina-login-card.jpg
+Allow: /nina-caution-18.jpg
+
 Disallow: /admin
 Disallow: /admin/*
 Disallow: /api/
@@ -23,3 +41,4 @@ Disallow: /feed
 
 Sitemap: https://ninakurainservices.in/sitemap.xml
 Sitemap: https://ninakurainservices.in/image-sitemap.xml
+
