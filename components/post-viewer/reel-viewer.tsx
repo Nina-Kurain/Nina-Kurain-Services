@@ -397,7 +397,7 @@ export function ReelViewer({
             <div className="rv-bottom-overlay">
               <div className="rv-creator-row">
                 <img
-                  src={avatar || "/nina-kurain-official-portrait.webp"}
+                  src={avatar || "/nina-gallery/nina-kurain-01.jpeg"}
                   alt={creatorName}
                   className="rv-creator-avatar"
                 />
@@ -510,7 +510,7 @@ export function ReelViewer({
           <div className="rv-desk-side-col">
             <div className="rv-desk-head">
               <img
-                src={avatar || "/nina-kurain-official-portrait.webp"}
+                src={avatar || "/nina-gallery/nina-kurain-01.jpeg"}
                 alt={creatorName}
                 className="rv-creator-avatar"
               />

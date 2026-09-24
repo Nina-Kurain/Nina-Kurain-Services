@@ -2,27 +2,28 @@ import { currentUser } from "@/lib/server/auth";
 import { getPublicCreatorData } from "@/lib/server/public-data";
 import { PublicHomepage } from "@/components/public-homepage";
 import type { Metadata } from "next";
+import { NINA_ENTITY, getWebSiteSchema, getPersonSchema } from "@/lib/seo/nina-entity";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Nina Kurain | Official Website & Digital Creator",
+  title: "Nina Kurain | Digital Creator — Official Website",
   description:
-    "Discover Nina Kurain, Digital Creator, through official photography, videos, creator updates, collaborations and social profiles.",
+    "Official website of Nina Kurain, Digital Creator. Showcasing photography, videos, creator updates, collaborations and official social channels.",
   alternates: {
-    canonical: "https://ninakurainservices.in/",
+    canonical: `${NINA_ENTITY.canonicalBase}/`,
   },
   openGraph: {
-    title: "Nina Kurain | Official Website & Digital Creator",
+    title: "Nina Kurain | Digital Creator — Official Website",
     description:
-      "Discover Nina Kurain, Digital Creator, through official photography, videos, creator updates, collaborations and social profiles.",
-    url: "https://ninakurainservices.in/",
-    siteName: "Nina Kurain",
+      "Official website of Nina Kurain, Digital Creator. Showcasing photography, videos, creator updates, and official social channels.",
+    url: `${NINA_ENTITY.canonicalBase}/`,
+    siteName: NINA_ENTITY.name,
     images: [
       {
-        url: "/nina-kurain-official-portrait.webp",
-        width: 1200,
-        height: 630,
+        url: "/nina-kurain-og.jpg",
+        width: 1376,
+        height: 768,
         alt: "Nina Kurain — Digital Creator",
       },
     ],
@@ -31,11 +32,10 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Nina Kurain | Official Website & Digital Creator",
+    title: "Nina Kurain | Digital Creator — Official Website",
     description:
-      "Discover Nina Kurain, Digital Creator, through official photography, videos, creator updates, collaborations and social profiles.",
-    images: ["/nina-kurain-official-portrait.webp"],
-    creator: "@ninakurain",
+      "Official website of Nina Kurain, Digital Creator.",
+    images: ["/nina-kurain-og.jpg"],
   },
 };
 
@@ -45,21 +45,38 @@ export default async function Home() {
     getPublicCreatorData(),
   ]);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      getWebSiteSchema(),
+      getPersonSchema(),
+    ],
+  };
+
   return (
-    <PublicHomepage
-      signedIn={Boolean(user)}
-      displayName={user?.display_name ?? null}
-      settings={data.settings}
-      socials={{
-        instagram: data.settings.instagram,
-        youtube: data.settings.youtube,
-        facebook: data.settings.facebook,
-        website: data.settings.website,
-        pinterest: data.settings.pinterest,
-      }}
-      photos={data.photos}
-      videos={data.videos}
-      updates={data.updates}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <PublicHomepage
+        signedIn={Boolean(user)}
+        displayName={user?.display_name ?? null}
+        settings={data.settings}
+        socials={{
+          instagram: data.settings.instagram,
+          youtube: data.settings.youtube,
+          facebook: data.settings.facebook,
+          website: data.settings.website,
+          pinterest: data.settings.pinterest,
+          x: data.settings.x,
+          whatsapp: data.settings.whatsapp,
+          vipUrl: data.settings.vipUrl,
+        }}
+        photos={data.photos}
+        videos={data.videos}
+        updates={data.updates}
+      />
+    </>
   );
 }

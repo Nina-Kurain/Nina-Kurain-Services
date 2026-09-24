@@ -2,32 +2,26 @@ import type { Metadata } from "next";
 import Link from "@/components/site-link";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
-import { ArrowRight, Download, Mail, ExternalLink, Sparkles, FileText, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Mail, Sparkles, FileText } from "lucide-react";
+import { NINA_ENTITY, getBreadcrumbListSchema } from "@/lib/seo/nina-entity";
 
 export const metadata: Metadata = {
-  title: "Nina Kurain | Press & Media Room",
+  title: "Nina Kurain Press & Media Kit",
   description:
-    "Official Press and Media resources for Nina Kurain, Digital Creator and model. Access high-resolution brand assets, official biographies, and media inquiries.",
-  keywords: [
-    "Nina Kurain Press",
-    "Nina Kurain Media Kit",
-    "Nina Kurain Press Kit",
-    "Nina Kurain Bio PDF",
-    "Nina Kurain Official Media",
-  ],
+    "Official press and media kit for Nina Kurain, Digital Creator. Access approved brand assets, creator biography, and media inquiries.",
   alternates: {
-    canonical: "https://ninakurainservices.in/press",
+    canonical: `${NINA_ENTITY.canonicalBase}/press`,
   },
   openGraph: {
-    title: "Nina Kurain | Press & Media Room",
-    description: "Official Press and Media resources for Nina Kurain, Digital Creator.",
-    url: "https://ninakurainservices.in/press",
-    siteName: "Nina Kurain",
+    title: "Nina Kurain Press & Media Kit",
+    description: "Official press and media resources for Nina Kurain, Digital Creator.",
+    url: `${NINA_ENTITY.canonicalBase}/press`,
+    siteName: NINA_ENTITY.name,
     images: [
       {
-        url: "/nina-kurain-official-portrait.webp",
-        width: 1200,
-        height: 630,
+        url: "/nina-kurain-og.jpg",
+        width: 1376,
+        height: 768,
         alt: "Nina Kurain Press Room",
       },
     ],
@@ -36,10 +30,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Nina Kurain | Press & Media Room",
-    description: "Official press releases and brand assets for Nina Kurain.",
-    images: ["/nina-kurain-official-portrait.webp"],
-    creator: "@ninakurain",
+    title: "Nina Kurain Press & Media Kit",
+    description: "Official media kit and brand resources for Nina Kurain, Digital Creator.",
+    images: ["/nina-kurain-og.jpg"],
   },
 };
 
@@ -49,29 +42,18 @@ export default function PressPage() {
     "@graph": [
       {
         "@type": "WebPage",
-        "@id": "https://ninakurainservices.in/press/#webpage",
-        "url": "https://ninakurainservices.in/press",
-        "name": "Nina Kurain Press & Media Room",
-        "description": "Press resources, media assets, and official statements for Nina Kurain.",
+        "@id": `${NINA_ENTITY.canonicalBase}/press/#webpage`,
+        url: `${NINA_ENTITY.canonicalBase}/press`,
+        name: "Nina Kurain Press & Media Kit",
+        description: "Official first-party press resources, media assets, and statements for Nina Kurain.",
+        about: {
+          "@id": NINA_ENTITY.id,
+        },
       },
-      {
-        "@type": "BreadcrumbList",
-        "@id": "https://ninakurainservices.in/press/#breadcrumbs",
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Nina Kurain",
-            "item": "https://ninakurainservices.in/",
-          },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "name": "Press",
-            "item": "https://ninakurainservices.in/press",
-          },
-        ],
-      },
+      getBreadcrumbListSchema([
+        { name: NINA_ENTITY.name, url: `${NINA_ENTITY.canonicalBase}/` },
+        { name: "Press", url: `${NINA_ENTITY.canonicalBase}/press` },
+      ]),
     ],
   };
 
@@ -87,13 +69,13 @@ export default function PressPage() {
         <section className="public-section" style={{ paddingTop: "40px" }}>
           <div className="section-head">
             <div className="section-head-copy">
-              <span className="section-kicker">EDITORIAL &amp; MEDIA ROOM</span>
+              <span className="section-kicker">FIRST-PARTY MEDIA ROOM</span>
               <h1 style={{ fontSize: "clamp(38px, 5vw, 64px)", margin: "0 0 14px", fontFamily: "var(--nk-font-serif)" }}>
                 Press &amp; Media Kit
               </h1>
               <p>
-                Resources, brand identity guidelines, high-resolution portrait downloads, and official
-                statements for journalists, editors, and conference organizers.
+                Official creator statements, brand identity guidelines, approved photography downloads,
+                and contact channels for publications, editors, and partners.
               </p>
             </div>
             <div>
@@ -104,7 +86,7 @@ export default function PressPage() {
             </div>
           </div>
 
-          {/* Quick Facts / Brand Boilerplate */}
+          {/* Brand Boilerplate */}
           <div style={{
             padding: "clamp(24px, 4vw, 36px)",
             borderRadius: "var(--nk-radius-lg)",
@@ -113,64 +95,64 @@ export default function PressPage() {
             marginBottom: "40px",
           }}>
             <h2 style={{ fontFamily: "var(--nk-font-serif)", fontSize: "24px", margin: "0 0 16px" }}>
-              Official Brand Boilerplate
+              Official Creator Summary
             </h2>
             <p style={{ color: "var(--nk-text-muted)", fontSize: "15px", lineHeight: 1.75, margin: "0 0 20px" }}>
-              <strong>Nina Kurain</strong> is an Indian Digital Creator, model, and creative artist celebrated
-              for original fine-art photography, high-concept fashion editorials, and atmospheric studio
-              cinematography. Operating from her official digital hub at <code>ninakurainservices.in</code>,
-              her creative body of work explores chiaroscuro aesthetics, modern minimalism, and kinetic motion.
+              <strong>Nina Kurain</strong> is an independent Digital Creator known for fine-art photography,
+              contemporary fashion styling, and atmospheric studio cinematography. Operating through her
+              official digital hub at <code>ninakurainservices.in</code>, her creative body of work focuses
+              on composition, texture depth, and visual storytelling.
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
-              <div className="collab-tag"><span /> <strong>Canonical Name:</strong> Nina Kurain</div>
+              <div className="collab-tag"><span /> <strong>Name:</strong> Nina Kurain</div>
               <div className="collab-tag"><span /> <strong>Positioning:</strong> Digital Creator</div>
-              <div className="collab-tag"><span /> <strong>Domain:</strong> ninakurainservices.in</div>
-              <div className="collab-tag"><span /> <strong>Entity ID:</strong> #nina-kurain</div>
+              <div className="collab-tag"><span /> <strong>Official Hub:</strong> ninakurainservices.in</div>
+              <div className="collab-tag"><span /> <strong>Instagram:</strong> @kurain.bae</div>
             </div>
           </div>
 
           {/* Downloadable Media Resources */}
           <div className="section-head">
             <div className="section-head-copy">
-              <span className="section-kicker">DOWNLOADABLE ASSETS</span>
-              <h2>High-Resolution Media Package</h2>
-              <p>Approved visual assets for publication with standard copyright attribution: Photo © Nina Kurain.</p>
+              <span className="section-kicker">APPROVED ASSETS</span>
+              <h2>Media Resources</h2>
+              <p>Approved visual assets for editorial use with copyright attribution: Photo © Nina Kurain.</p>
             </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "20px" }}>
             <div style={{ padding: "24px", borderRadius: "var(--nk-radius-md)", background: "var(--nk-surface)", border: "1px solid var(--nk-border)" }}>
               <FileText size={28} style={{ color: "var(--nk-rose-light)", marginBottom: "12px" }} />
-              <h3 style={{ fontFamily: "var(--nk-font-serif)", fontSize: "19px", margin: "0 0 8px" }}>Official Biography Dossier</h3>
+              <h3 style={{ fontFamily: "var(--nk-font-serif)", fontSize: "19px", margin: "0 0 8px" }}>Creator Biography</h3>
               <p style={{ fontSize: "13px", color: "var(--nk-text-muted)", margin: "0 0 16px" }}>
-                Complete biographical background, artistic journey, creative disciplines, and canonical links.
+                Biographical background, creative disciplines, and official social links.
               </p>
               <Link href="/about" className="section-action-link">
-                <span>View Full Bio</span>
+                <span>View Creator Profile</span>
                 <ArrowRight size={13} />
               </Link>
             </div>
 
             <div style={{ padding: "24px", borderRadius: "var(--nk-radius-md)", background: "var(--nk-surface)", border: "1px solid var(--nk-border)" }}>
               <Sparkles size={28} style={{ color: "var(--nk-rose-light)", marginBottom: "12px" }} />
-              <h3 style={{ fontFamily: "var(--nk-font-serif)", fontSize: "19px", margin: "0 0 8px" }}>Signature Press Portraits</h3>
+              <h3 style={{ fontFamily: "var(--nk-font-serif)", fontSize: "19px", margin: "0 0 8px" }}>Approved Portraits</h3>
               <p style={{ fontSize: "13px", color: "var(--nk-text-muted)", margin: "0 0 16px" }}>
-                Curated high-resolution WebP/JPG portraits optimized for print and online editorial features.
+                Curated high-resolution portraits optimized for editorial and publication features.
               </p>
               <Link href="/photos" className="section-action-link">
-                <span>Browse Press Gallery</span>
+                <span>Browse Photo Gallery</span>
                 <ArrowRight size={13} />
               </Link>
             </div>
 
             <div style={{ padding: "24px", borderRadius: "var(--nk-radius-md)", background: "var(--nk-surface)", border: "1px solid var(--nk-border)" }}>
               <Mail size={28} style={{ color: "var(--nk-rose-light)", marginBottom: "12px" }} />
-              <h3 style={{ fontFamily: "var(--nk-font-serif)", fontSize: "19px", margin: "0 0 8px" }}>Direct Media Liaison</h3>
+              <h3 style={{ fontFamily: "var(--nk-font-serif)", fontSize: "19px", margin: "0 0 8px" }}>Direct Media Inquiries</h3>
               <p style={{ fontSize: "13px", color: "var(--nk-text-muted)", margin: "0 0 16px" }}>
-                For interview requests, podcast appearances, and editorial commentary.
+                For editorial commentary, licensing inquiries, and interview questions.
               </p>
               <Link href="/contact" className="section-action-link">
-                <span>Contact Press Desk</span>
+                <span>Contact Direct</span>
                 <ArrowRight size={13} />
               </Link>
             </div>

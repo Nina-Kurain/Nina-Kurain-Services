@@ -5,6 +5,10 @@ import { VerifyEmailPendingClient } from "@/app/verify-email-pending/verify-emai
 export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Verify Your Email · Nina Kurain Club",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function VerifyEmailPendingPage() {

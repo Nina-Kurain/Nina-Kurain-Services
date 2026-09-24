@@ -2,33 +2,31 @@ import type { Metadata } from "next";
 import Link from "@/components/site-link";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
-import { Mail, MessageSquare, ArrowRight, CheckCircle2, Globe2, Sparkles } from "lucide-react";
+import { Mail, MessageSquare, Globe2, ExternalLink, ArrowRight } from "lucide-react";
+import { InstagramIcon, FacebookIcon, PinterestIcon } from "@/components/social-icons";
 import { ContactForm } from "@/components/contact-form";
+import { NINA_ENTITY, getBreadcrumbListSchema } from "@/lib/seo/nina-entity";
+import { getPublicCreatorData } from "@/lib/server/public-data";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Contact Nina Kurain | Official Creator Inquiries",
+  title: "Contact Nina Kurain | Official Inquiries",
   description:
-    "Direct contact details and inquiry portal for Nina Kurain, Digital Creator and model. For brand collaborations, media requests, and bookings.",
-  keywords: [
-    "Contact Nina Kurain",
-    "Nina Kurain Email",
-    "Nina Kurain Inquiries",
-    "Nina Kurain Booking",
-    "Nina Kurain Management",
-  ],
+    "Direct contact details and inquiry portal for Nina Kurain, Digital Creator. For editorial licensing, brand collaborations, and general inquiries.",
   alternates: {
-    canonical: "https://ninakurainservices.in/contact",
+    canonical: `${NINA_ENTITY.canonicalBase}/contact`,
   },
   openGraph: {
-    title: "Contact Nina Kurain | Official Creator Inquiries",
-    description: "Direct contact details and inquiry portal for Nina Kurain, Digital Creator and model.",
-    url: "https://ninakurainservices.in/contact",
-    siteName: "Nina Kurain",
+    title: "Contact Nina Kurain | Official Inquiries",
+    description: "Direct contact details and inquiry portal for Nina Kurain, Digital Creator.",
+    url: `${NINA_ENTITY.canonicalBase}/contact`,
+    siteName: NINA_ENTITY.name,
     images: [
       {
-        url: "/nina-kurain-official-portrait.webp",
-        width: 1200,
-        height: 630,
+        url: "/nina-kurain-og.jpg",
+        width: 1376,
+        height: 768,
         alt: "Contact Nina Kurain",
       },
     ],
@@ -37,44 +35,41 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Contact Nina Kurain",
-    description: "Direct creator inquiries and media booking.",
-    images: ["/nina-kurain-official-portrait.webp"],
-    creator: "@ninakurain",
+    title: "Contact Nina Kurain | Official Inquiries",
+    description: "Direct creator inquiries and communication portal.",
+    images: ["/nina-kurain-og.jpg"],
   },
 };
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const { settings } = await getPublicCreatorData();
+  const creatorName = settings?.name || NINA_ENTITY.name;
+
   const jsonLdContact = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "ContactPage",
-        "@id": "https://ninakurainservices.in/contact/#webpage",
-        "url": "https://ninakurainservices.in/contact",
-        "name": "Contact Nina Kurain | Official Creator Inquiries",
-        "description": "Official contact and communication portal for Nina Kurain, Digital Creator.",
+        "@id": `${NINA_ENTITY.canonicalBase}/contact/#webpage`,
+        url: `${NINA_ENTITY.canonicalBase}/contact`,
+        name: `Contact ${creatorName} | Official Inquiries`,
+        description: `Official contact and communication portal for ${creatorName}, Digital Creator.`,
+        about: {
+          "@id": NINA_ENTITY.id,
+        },
       },
-      {
-        "@type": "BreadcrumbList",
-        "@id": "https://ninakurainservices.in/contact/#breadcrumbs",
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Nina Kurain",
-            "item": "https://ninakurainservices.in/",
-          },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "name": "Contact",
-            "item": "https://ninakurainservices.in/contact",
-          },
-        ],
-      },
+      getBreadcrumbListSchema([
+        { name: NINA_ENTITY.name, url: `${NINA_ENTITY.canonicalBase}/` },
+        { name: "Contact", url: `${NINA_ENTITY.canonicalBase}/contact` },
+      ]),
     ],
   };
+
+  const whatsappLink = settings.whatsapp
+    ? settings.whatsapp.startsWith("http")
+      ? settings.whatsapp
+      : `https://wa.me/${settings.whatsapp.replace(/[^0-9]/g, "")}`
+    : "";
 
   return (
     <div className="public-page-wrapper">
@@ -90,55 +85,87 @@ export default function ContactPage() {
             <div className="section-head-copy">
               <span className="section-kicker">COMMUNICATIONS DESK</span>
               <h1 style={{ fontSize: "clamp(38px, 5vw, 64px)", margin: "0 0 14px", fontFamily: "var(--nk-font-serif)" }}>
-                Contact Nina Kurain
+                Contact &amp; Inquiries
               </h1>
               <p>
-                Direct communication channels for brand partnerships, media requests, editorial bookings,
-                and creative inquiries.
+                Have a proposal, media question, or collaboration opportunity? Use the verified channels
+                below to establish direct communication with {creatorName} and her creative studio.
               </p>
             </div>
           </div>
 
-          <div className="contact-layout-grid">
-            <div className="contact-form-card">
-              <ContactForm />
+          <div className="collab-container">
+            <div className="collab-info">
+              <h2>Direct Channels</h2>
+              <p style={{ marginBottom: "24px" }}>
+                All inquiries are processed directly. Please select the most appropriate channel:
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div style={{ padding: "20px", borderRadius: "var(--nk-radius-md)", background: "var(--nk-surface)", border: "1px solid var(--nk-border)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, color: "var(--nk-rose-light)" }}>
+                    <Mail size={18} />
+                    <strong>Collaborations &amp; Creative Direction</strong>
+                  </div>
+                  <p style={{ margin: "0 0 12px", fontSize: "14px", color: "var(--nk-text-muted)" }}>
+                    Inquiries for brand campaigns, editorial styling, and visual projects.
+                  </p>
+                  <Link href="/collaborations" className="btn-secondary" style={{ fontSize: "12px", padding: "6px 14px", display: "inline-flex", gap: 6, alignItems: "center" }}>
+                    <span>Collaboration Portal</span>
+                    <ArrowRight size={13} />
+                  </Link>
+                </div>
+
+                <div style={{ padding: "20px", borderRadius: "var(--nk-radius-md)", background: "var(--nk-surface)", border: "1px solid var(--nk-border)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, color: "var(--nk-rose-light)" }}>
+                    <InstagramIcon size={18} />
+                    <strong>Instagram Direct</strong>
+                  </div>
+                  <p style={{ margin: "0 0 12px", fontSize: "14px", color: "var(--nk-text-muted)" }}>
+                    Official account @kurain.bae for updates and creative interactions.
+                  </p>
+                  <a href={settings.instagram || NINA_ENTITY.instagramUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary" style={{ fontSize: "12px", padding: "6px 14px", display: "inline-flex", gap: 6, alignItems: "center" }}>
+                    <span>Message on Instagram</span>
+                    <ExternalLink size={13} />
+                  </a>
+                </div>
+
+                {whatsappLink && (
+                  <div style={{ padding: "20px", borderRadius: "var(--nk-radius-md)", background: "var(--nk-surface)", border: "1px solid var(--nk-border)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, color: "#34d399" }}>
+                      <MessageSquare size={18} />
+                      <strong>WhatsApp Direct Desk</strong>
+                    </div>
+                    <p style={{ margin: "0 0 12px", fontSize: "14px", color: "var(--nk-text-muted)" }}>
+                      Direct messaging desk for verified project inquiries.
+                    </p>
+                    <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="btn-secondary" style={{ fontSize: "12px", padding: "6px 14px", display: "inline-flex", gap: 6, alignItems: "center" }}>
+                      <span>Chat on WhatsApp</span>
+                      <ExternalLink size={13} />
+                    </a>
+                  </div>
+                )}
+
+                <div style={{ padding: "20px", borderRadius: "var(--nk-radius-md)", background: "var(--nk-surface)", border: "1px solid var(--nk-border)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, color: "var(--nk-rose-light)" }}>
+                    <Globe2 size={18} />
+                    <strong>Official Domain Inquiries</strong>
+                  </div>
+                  <p style={{ margin: 0, fontSize: "14px", color: "var(--nk-text-muted)" }}>
+                    <code>ninakurainservices.in</code> — Verified canonical presence.
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              <div style={{ padding: "26px", borderRadius: "var(--nk-radius-md)", background: "var(--nk-surface)", border: "1px solid var(--nk-border)" }}>
-                <Mail size={24} style={{ color: "var(--nk-rose-light)", marginBottom: "10px" }} />
-                <h3 style={{ fontFamily: "var(--nk-font-serif)", fontSize: "18px", margin: "0 0 6px" }}>Official Inquiry Inbox</h3>
-                <p style={{ fontSize: "13.5px", color: "var(--nk-text-muted)", margin: "0 0 10px", lineHeight: 1.6 }}>
-                  Direct studio correspondence for commercial and media projects:
-                </p>
-                <code style={{ fontSize: "13px", color: "var(--nk-rose-light)" }}>contact@ninakurainservices.in</code>
-              </div>
-
-              <div style={{ padding: "26px", borderRadius: "var(--nk-radius-md)", background: "var(--nk-surface)", border: "1px solid var(--nk-border)" }}>
-                <Globe2 size={24} style={{ color: "var(--nk-rose-light)", marginBottom: "10px" }} />
-                <h3 style={{ fontFamily: "var(--nk-font-serif)", fontSize: "18px", margin: "0 0 6px" }}>Canonical Domain</h3>
-                <p style={{ fontSize: "13.5px", color: "var(--nk-text-muted)", margin: 0, lineHeight: 1.6 }}>
-                  Nina Kurain&apos;s sole authoritative domain is <strong>https://ninakurainservices.in/</strong>. All official updates and image releases are published here.
-                </p>
-              </div>
-
-              <div style={{ padding: "26px", borderRadius: "var(--nk-radius-md)", background: "var(--nk-surface)", border: "1px solid var(--nk-border)" }}>
-                <Sparkles size={24} style={{ color: "var(--nk-rose-light)", marginBottom: "10px" }} />
-                <h3 style={{ fontFamily: "var(--nk-font-serif)", fontSize: "18px", margin: "0 0 6px" }}>Social Messaging</h3>
-                <p style={{ fontSize: "13.5px", color: "var(--nk-text-muted)", margin: "0 0 12px", lineHeight: 1.6 }}>
-                  You may also send verified direct messages via our official Instagram handle.
-                </p>
-                <a href="https://www.instagram.com/ninakurain" target="_blank" rel="noopener noreferrer" className="section-action-link">
-                  <span>Visit @ninakurain</span>
-                  <ArrowRight size={13} />
-                </a>
-              </div>
+            <div className="collab-form-box">
+              <ContactForm />
             </div>
           </div>
         </section>
       </main>
 
-      <PublicFooter />
+      <PublicFooter settings={settings} />
     </div>
   );
 }

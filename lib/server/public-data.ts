@@ -9,11 +9,13 @@ export interface PublicCreatorSettings {
   instagram: string;
   youtube: string;
   facebook: string;
-
   website: string;
   pinterest: string;
+  x: string;
+  phone: string;
+  whatsapp: string;
   heroImage: string;
-  phone?: string;
+  vipUrl: string;
 }
 
 export interface DynamicPhoto {
@@ -71,21 +73,24 @@ export async function getPublicCreatorData() {
   const settings: PublicCreatorSettings = {
     name: settingsMap.creator_name || "Nina Kurain",
     title: settingsMap.creator_title || "Digital Creator",
-    subheading: settingsMap.creator_subheading || "Digital Creator • Model • Creative Artist",
+    subheading: settingsMap.creator_subheading || "Visual Storyteller • Contemporary Photography & Direction",
     bio:
       settingsMap.creator_bio ||
       "Nina Kurain is a Digital Creator dedicated to exploring the intersections of editorial fashion, fine-art portraiture, and cinematic motion.",
-    instagram: settingsMap.creator_instagram || "https://www.instagram.com/ninakurain",
+    instagram: settingsMap.creator_instagram || "https://www.instagram.com/kurain.bae",
     youtube: settingsMap.creator_youtube || "https://www.youtube.com/@ninakurain",
-    facebook: settingsMap.creator_facebook || "https://www.facebook.com/ninakurain",
-
+    facebook: settingsMap.creator_facebook || "https://www.facebook.com/p/Nina-Kurain-61591094695387/",
     website: settingsMap.creator_website || "https://ninakurainservices.in",
-    pinterest: settingsMap.creator_pinterest || "https://www.pinterest.com/ninakurain",
+    pinterest: settingsMap.creator_pinterest || "https://www.pinterest.com/NinaKurain/",
+    x: settingsMap.creator_x || "https://x.com/ninakurain",
+    phone: settingsMap.creator_phone || "",
+    whatsapp: settingsMap.creator_whatsapp || "",
+    vipUrl: "https://vip.ninakurainservices.in",
     heroImage: settingsMap.creator_hero_image
       ? settingsMap.creator_hero_image
       : settingsMap.creator_avatar_asset_id
       ? `/api/content/media/${settingsMap.creator_avatar_asset_id}`
-      : "/nina-kurain-official-portrait.webp",
+      : "/nina-gallery/nina-kurain-01.jpeg",
   };
 
   // 2. Fetch published public posts from Creator Studio
@@ -119,7 +124,7 @@ export async function getPublicCreatorData() {
   }
 
   // 3. Fetch attached media for these posts
-  let postMediaMap: Record<
+  const postMediaMap: Record<
     string,
     Array<{
       asset_id: string;
@@ -193,7 +198,7 @@ export async function getPublicCreatorData() {
           meta: `Studio Film • ${dateStr}`,
           desc: post.caption,
           src: url,
-          poster: "/nina-kurain-official-portrait.webp",
+          poster: "/nina-gallery/nina-kurain-01.jpeg",
           isPremium: !(post.access_mode === "free" || post.visibility === "free"),
         });
       } else {
@@ -215,8 +220,8 @@ export async function getPublicCreatorData() {
     }
   }
 
-  // 5. Merge with signature collection so there is always a rich foundation
-  const basePhotos: DynamicPhoto[] = PHOTOS_DATA.map((p) => ({
+  // 5. Authentic Nina Kurain photo collection (from public/nina-gallery)
+  const authenticGalleryPhotos: DynamicPhoto[] = PHOTOS_DATA.map((p) => ({
     id: p.slug,
     slug: p.slug,
     title: p.title,
@@ -231,47 +236,11 @@ export async function getPublicCreatorData() {
     isPremium: p.isPremium ?? false,
   }));
 
-  // Combine: Creator Studio posts take priority at the front
-  const allPhotosRaw = [...dynamicPhotos, ...basePhotos.filter((b) => !dynamicPhotos.some((d) => d.id === b.id))];
-  // Exactly 1 initial demo frame for interaction, all remaining frames are VIP locked
-  const allPhotos = allPhotosRaw.map((p, idx) => ({
-    ...p,
-    isPremium: idx > 0,
-    tag: idx === 0 ? "Free Demo" : "VIP Locked",
-  }));
+  // Only serve authentic Nina Kurain gallery photos per user request (excluding seeded demo posts)
+  const allPhotos = authenticGalleryPhotos;
 
-  // 6. Videos with membership tiers and locks
-  const baseVideos: DynamicVideo[] = [
-    {
-      id: "v1",
-      title: "Arch & Tremble: Bedroom Tape (Uncensored)",
-      meta: "🔞 VIP PLATINUM • 08:45 Explicit 4K Tape",
-      desc: "Slow, breathless arching in dim candlelight. Hands gripping silk sheets, skin flushed hot, and every curve moving completely uninhibited just for you in full 4K 60fps.",
-      src: "/booty.mp4",
-      poster: "/nina-kurain-official-portrait.webp",
-      isPremium: true,
-    },
-    {
-      id: "v2",
-      title: "Behind Closed Doors: 3-Second Tease Loop",
-      meta: "🔥 VIP GOLD • 03s Hypnotic Loop",
-      desc: "A hypnotic glimpse behind locked doors. Slow seductive sway, parting lips, and an unspoken invitation to touch what isn't meant for public eyes.",
-      src: "/vid-2.mp4",
-      poster: "/nina-kurain-editorial-portrait.webp",
-      isPremium: true,
-    },
-    {
-      id: "v3",
-      title: "Glistening Silk & Wet Desires",
-      meta: "🔞 VIP DIAMOND • 03s Climax Film",
-      desc: "Drenched in warm oil and slow-motion pleasure. Every breathless arch captured up close, glistening under your gaze until the tension is completely unbearable.",
-      src: "/vid-3.mp4",
-      poster: "/nina-kurain-digital-creator.webp",
-      isPremium: true,
-    },
-  ];
-
-  const allVideos = [...dynamicVideos, ...baseVideos.filter((b) => !dynamicVideos.some((d) => d.id === b.id))];
+  // 6. Videos: Excluded per user request
+  const allVideos: DynamicVideo[] = [];
 
   const baseUpdates: DynamicUpdate[] = [
     {

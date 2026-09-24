@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     siteName: "Nina Kurain",
     images: [
       {
-        url: "/nina-kurain-official-portrait.webp",
+        url: "/nina-gallery/nina-kurain-01.jpeg",
         width: 1200,
         height: 630,
         alt: "Nina Kurain Media Kit",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Media Kit | Nina Kurain",
     description: "Official creator portfolio and brand kit.",
-    images: ["/nina-kurain-official-portrait.webp"],
+    images: ["/nina-gallery/nina-kurain-01.jpeg"],
     creator: "@ninakurain",
   },
 };
@@ -88,7 +88,7 @@ export default function MediaKitPage() {
 
             <div style={{ position: "relative", borderRadius: "var(--nk-radius-lg)", overflow: "hidden", border: "1px solid var(--nk-border)", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
               <Image
-                src="/nina-kurain-official-portrait.webp"
+                src="/nina-gallery/nina-kurain-01.jpeg"
                 alt="Nina Kurain Media Kit Portrait"
                 width={600}
                 height={780}

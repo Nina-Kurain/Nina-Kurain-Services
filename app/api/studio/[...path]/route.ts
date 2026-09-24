@@ -12,7 +12,7 @@ import { getDatabaseStorageStats,cleanDatabaseStorage } from "@/lib/server/stora
 type Context={params:Promise<{path:string[]}>};
 const postInput=z.object({id:z.string().max(100).optional(),title:z.string().trim().min(1).max(160),caption:z.string().max(5000),status:z.enum(["draft","published","scheduled","archived"]),published_at:z.number().finite(),access_mode:z.enum(["free","level","specific"]),minimum_level:z.number().int().min(0).max(3),comment_level:z.number().int().min(-1).max(3),plan_ids:z.array(z.string()).max(4),media_ids:z.array(z.string()).min(1).max(20),cover_id:z.string()});
 const storyInput=z.object({title:z.string().trim().min(1).max(80),caption:z.string().max(1000),access_mode:z.enum(["free","level","specific"]),minimum_level:z.number().int().min(0).max(3),plan_ids:z.array(z.string()).max(4),media_id:z.string(),highlight:z.boolean()});
-const optionalHttpsUrl=z.string().trim().max(300).refine(value=>{if(!value)return true;try{return new URL(value).protocol==="https:";}catch{return false;}},{message:"Use a complete https:// link."});
+const optionalHttpsUrl=z.preprocess(val=>{if(val===undefined||val===null)return "";if(typeof val!=="string")return String(val);const t=val.trim();if(!t)return "";if(!/^https?:\/\//i.test(t))return `https://${t}`;return t;},z.string().max(300).refine(value=>{if(!value)return true;try{const u=new URL(value);return u.protocol==="https:"||u.protocol==="http:";}catch{return false;}},{message:"Use a complete https:// link."}).optional().default(""));
 export async function GET(request:Request,ctx:Context){return endpoint(async()=>{const u=await apiAccount(true),{path}=await ctx.params,url=new URL(request.url);
   if(path[0]==="overview"){
     const users=await row("SELECT COUNT(*) AS total_users,SUM(verified=0) AS unverified_users FROM users WHERE role='member' AND active=1");
@@ -24,12 +24,12 @@ export async function GET(request:Request,ctx:Context){return endpoint(async()=>
   }
   if(path[0]==="posts"){const list=await rows<ContentPost>("SELECT * FROM posts WHERE is_story=0 ORDER BY created_at DESC LIMIT 500");for(const p of list)p.plan_ids=(await rows<{plan_id:string}>("SELECT plan_id FROM post_access WHERE post_id=?",p.id)).map(x=>x.plan_id);await attachMedia(u,list,true);return json({posts:list});}
   if(path[0]==="profile"){
-    const config=Object.fromEntries((await rows<{key:string;value:string}>("SELECT key,value FROM site_settings WHERE key IN ('creator_name','creator_bio','creator_avatar_asset_id','creator_instagram','creator_youtube','creator_facebook','creator_x','creator_website')")).map(x=>[x.key,x.value]));
+    const config=Object.fromEntries((await rows<{key:string;value:string}>("SELECT key,value FROM site_settings WHERE key IN ('creator_name','creator_bio','creator_avatar_asset_id','creator_instagram','creator_youtube','creator_facebook','creator_pinterest','creator_x','creator_website')")).map(x=>[x.key,x.value]));
     const list=await rows<ContentPost>("SELECT p.*,EXISTS(SELECT 1 FROM likes WHERE post_id=p.id AND user_id=?) AS liked,EXISTS(SELECT 1 FROM saved_posts WHERE post_id=p.id AND user_id=?) AS saved,(SELECT COUNT(*) FROM likes WHERE post_id=p.id) AS like_count,(SELECT COUNT(*) FROM comments WHERE post_id=p.id AND deleted_at IS NULL) AS comment_count FROM posts p WHERE is_story=0 AND status IN ('published','scheduled') AND published_at<=? ORDER BY published_at DESC, id DESC LIMIT 500",u.id,u.id,Date.now());
     for(const p of list)p.plan_ids=(await rows<{plan_id:string}>("SELECT plan_id FROM post_access WHERE post_id=?",p.id)).map(x=>x.plan_id);
-    const avatar=config.creator_avatar_asset_id?await mediaUrl(u,config.creator_avatar_asset_id,"profile",true):"/seductive-1.jpeg";
+    const avatar=config.creator_avatar_asset_id?await mediaUrl(u,config.creator_avatar_asset_id,"profile",true):"/nina-gallery/nina-kurain-01.jpeg";
     await attachMedia(u,list,true);
-    return json({creator:{name:config.creator_name??"Nina Kurain",bio:config.creator_bio??"A private collection of photographs, films and personal notes.",avatar,socials:{instagram:config.creator_instagram??"",youtube:config.creator_youtube??"",facebook:config.creator_facebook??"",x:config.creator_x??"",website:config.creator_website??""}},posts:list,plans:await getPlans(true)});
+    return json({creator:{name:config.creator_name??"Nina Kurain",bio:config.creator_bio??"A private collection of photographs, films and personal notes.",avatar,socials:{instagram:config.creator_instagram??"",youtube:config.creator_youtube??"",facebook:config.creator_facebook??"",pinterest:config.creator_pinterest??"",x:config.creator_x??"",website:config.creator_website??""}},posts:list,plans:await getPlans(true)});
   }
   if(path[0]==="stories"){const list=await rows<ContentPost>("SELECT * FROM posts WHERE is_story=1 ORDER BY is_highlight DESC,created_at DESC LIMIT 500");for(const p of list)p.plan_ids=(await rows<{plan_id:string}>("SELECT plan_id FROM post_access WHERE post_id=?",p.id)).map(x=>x.plan_id);await attachMedia(u,list,true);return json({stories:list,plans:await getPlans(true)});}
   if(path[0]==="media"){const assets=await rows<{id:string;name:string;mime:string;bytes:number;created_at:number}>("SELECT id,name,mime,bytes,created_at FROM media_assets ORDER BY created_at DESC LIMIT 500");return json({media:await Promise.all(assets.map(async a=>({...a,url:await mediaUrl(u,a.id,"",true)})))});}
@@ -226,27 +226,28 @@ export async function POST(request:Request,ctx:Context){return endpoint(async()=
   if(path[0]==="settings"){
     const s=z.object({
       creator_name:z.string().trim().min(1).max(100),
-      creator_bio:z.string().max(1000),
-      creator_avatar_asset_id:z.string().max(100),
+      creator_bio:z.string().max(1000).optional().default(""),
+      creator_avatar_asset_id:z.string().max(100).optional().default(""),
       creator_phone:z.string().trim().max(30).optional().default(""),
       creator_whatsapp:z.string().trim().max(30).optional().default(""),
       creator_instagram:optionalHttpsUrl,
       creator_youtube:optionalHttpsUrl,
       creator_facebook:optionalHttpsUrl,
+      creator_pinterest:optionalHttpsUrl,
       creator_x:optionalHttpsUrl,
       creator_website:optionalHttpsUrl,
-      likes_enabled:z.boolean(),
-      require_verification:z.boolean(),
-      ads_enabled:z.boolean().optional().default(false),
+      likes_enabled:z.preprocess(val=>val===true||val==="true"||val===1||val==="1",z.boolean()).optional().default(true),
+      require_verification:z.preprocess(val=>val===true||val==="true"||val===1||val==="1",z.boolean()).optional().default(false),
+      ads_enabled:z.preprocess(val=>val===true||val==="true"||val===1||val==="1",z.boolean()).optional().default(false),
       ads_adsense_client:z.string().trim().max(100).optional().default(""),
       ads_in_feed_slot:z.string().trim().max(100).optional().default(""),
       ads_banner_slot:z.string().trim().max(100).optional().default(""),
-      ads_hide_for_paid:z.boolean().optional().default(true),
+      ads_hide_for_paid:z.preprocess(val=>val===true||val==="true"||val===1||val==="1",z.boolean()).optional().default(true),
       ads_custom_html:z.string().max(5000).optional().default(""),
       ads_txt_content:z.string().max(5000).optional().default("")
-    }).parse(v);
+    }).passthrough().parse(v);
     if(s.require_verification&&!emailReady())throw new HttpError(409,"Configure email delivery before requiring verification.");
-    if(s.creator_avatar_asset_id&&!await row("SELECT id FROM media_assets WHERE id=? AND created_by=?",s.creator_avatar_asset_id,u.id))throw new HttpError(400,"Choose an uploaded creator image.");
+    if(s.creator_avatar_asset_id&&!await row("SELECT id FROM media_assets WHERE id=?",s.creator_avatar_asset_id))throw new HttpError(400,"Choose an uploaded creator image.");
     await database().batch([
       ...Object.entries(s).map(([key,value])=>sql("INSERT INTO site_settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",key,String(value))),
       audit(u.id,"settings","site",s)

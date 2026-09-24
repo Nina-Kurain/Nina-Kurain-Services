@@ -10,8 +10,10 @@ import { useState, useEffect } from "react";
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
-  { href: "/photos", label: "Photography" },
-  { href: "/videos", label: "Videos" },
+  { href: "/biography", label: "Biography" },
+  { href: "/photos", label: "Gallery" },
+  { href: "/lookbook", label: "Lookbook" },
+  { href: "/pricing", label: "Pricing" },
   { href: "/updates", label: "Updates" },
   { href: "/socials", label: "Socials" },
   { href: "/collaborations", label: "Collaborate" },
@@ -80,13 +82,12 @@ export function PublicHeader() {
           <a
             href="https://vip.ninakurainservices.in/"
             className="vip-club-cta"
-            title="Nina Kurain Private Creator Club (18+)"
+            title="Nina Kurain Member Portal"
             target="_blank"
             rel="noopener noreferrer"
           >
-            <span className="vip-cta-full">Private Club</span>
+            <span className="vip-cta-full">Members Portal</span>
             <span className="vip-cta-short">VIP</span>
-            <span className="age-tag">18+</span>
             <ArrowUpRight size={13} className="cta-arrow" />
           </a>
 
@@ -130,8 +131,8 @@ export function PublicHeader() {
             </div>
             <div className="drawer-vip-card">
               <div className="drawer-vip-info">
-                <strong>Private Creator Club</strong>
-                <span>Age-restricted members archive &amp; exclusive vault</span>
+                <strong>Patron &amp; Member Club</strong>
+                <span>Direct supporter portal and exclusive private archives</span>
               </div>
               <a
                 href="https://vip.ninakurainservices.in/"
@@ -139,7 +140,7 @@ export function PublicHeader() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <span>Enter VIP Archive (18+)</span>
+                <span>Enter Member Portal</span>
                 <ArrowUpRight size={14} />
               </a>
             </div>

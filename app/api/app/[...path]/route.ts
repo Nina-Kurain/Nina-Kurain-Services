@@ -18,10 +18,10 @@ export async function GET(request:Request,ctx:Context){return endpoint(async()=>
     const started=performance.now(),offset=Math.min(100000,Math.max(0,Number(url.searchParams.get("offset"))||0)),kind=url.searchParams.get("kind")??"all";
     const [result,settings]=await Promise.all([
       feed(u,{offset:Math.floor(offset),search:(url.searchParams.get("q")??"").slice(0,160),kind:["image","video"].includes(kind)?kind:"all",saved:url.searchParams.get("saved")==="1",collection:["demo","exclusive"].includes(url.searchParams.get("collection")??"")?url.searchParams.get("collection") as "demo"|"exclusive":"all",planLevel:Math.min(3,Math.max(0,Number(url.searchParams.get("level"))||0))}),
-      rows<{key:string;value:string}>("SELECT key,value FROM site_settings WHERE key IN ('creator_name','creator_bio','creator_avatar_asset_id','likes_enabled','creator_instagram','creator_youtube','creator_facebook','creator_x','creator_website','creator_phone','creator_whatsapp','ads_enabled','ads_adsense_client','ads_in_feed_slot','ads_banner_slot','ads_hide_for_paid','ads_custom_html')")
+      rows<{key:string;value:string}>("SELECT key,value FROM site_settings WHERE key IN ('creator_name','creator_bio','creator_avatar_asset_id','likes_enabled','creator_instagram','creator_youtube','creator_facebook','creator_pinterest','creator_x','creator_website','creator_phone','creator_whatsapp','ads_enabled','ads_adsense_client','ads_in_feed_slot','ads_banner_slot','ads_hide_for_paid','ads_custom_html')")
     ]);
     const config=Object.fromEntries(settings.map(s=>[s.key,s.value]));
-    const [,avatar]=await Promise.all([attachMedia(u,result.posts),config.creator_avatar_asset_id?mediaUrl(u,config.creator_avatar_asset_id,"profile"):Promise.resolve("/seductive-1.jpeg")]);
+    const [,avatar]=await Promise.all([attachMedia(u,result.posts),config.creator_avatar_asset_id?mediaUrl(u,config.creator_avatar_asset_id,"profile"):Promise.resolve("/nina-gallery/nina-kurain-01.jpeg")]);
     const response=json({
       ...result,
       plans:await getPlans(),
@@ -29,7 +29,7 @@ export async function GET(request:Request,ctx:Context){return endpoint(async()=>
         name:config.creator_name??"Nina Kurain",
         bio:config.creator_bio??"A private collection of photographs, films and personal notes.",
         avatar,
-        socials:{instagram:config.creator_instagram??"",youtube:config.creator_youtube??"",facebook:config.creator_facebook??"",x:config.creator_x??"",website:config.creator_website??""},
+        socials:{instagram:config.creator_instagram??"",youtube:config.creator_youtube??"",facebook:config.creator_facebook??"",pinterest:config.creator_pinterest??"",x:config.creator_x??"",website:config.creator_website??""},
         contact:{phone:config.creator_phone??"",whatsapp:config.creator_whatsapp??""}
       },
       likesEnabled:config.likes_enabled!=="false",
@@ -47,7 +47,7 @@ export async function GET(request:Request,ctx:Context){return endpoint(async()=>
   }
   if(path[0]==="stories"){
     const [result,settings]=await Promise.all([storyFeed(u),rows<{key:string;value:string}>("SELECT key,value FROM site_settings WHERE key IN ('creator_name','creator_avatar_asset_id')")]);
-    const config=Object.fromEntries(settings.map(s=>[s.key,s.value]));await attachMedia(u,result.stories);const avatar=config.creator_avatar_asset_id?await mediaUrl(u,config.creator_avatar_asset_id,"profile"):"/seductive-1.jpeg";return json({...result,creator:{name:config.creator_name??"Nina Kurain",avatar}});
+    const config=Object.fromEntries(settings.map(s=>[s.key,s.value]));await attachMedia(u,result.stories);const avatar=config.creator_avatar_asset_id?await mediaUrl(u,config.creator_avatar_asset_id,"profile"):"/nina-gallery/nina-kurain-01.jpeg";return json({...result,creator:{name:config.creator_name??"Nina Kurain",avatar}});
   }
   if(path[0]==="comments"){const p=await allowedPost(u,path[1]);if(!p)throw new HttpError(403,"Post unavailable for your membership.");const e=await entitlement(u.id);return json({comments:await rows("SELECT c.id,c.user_id,c.parent_id,c.body,c.pinned_at,c.created_at,u.display_name,u.role,(SELECT COUNT(*) FROM comment_likes cl WHERE cl.comment_id=c.id) AS like_count,EXISTS(SELECT 1 FROM comment_likes cl WHERE cl.comment_id=c.id AND cl.user_id=?) AS liked FROM comments c JOIN users u ON u.id=c.user_id WHERE c.post_id=? AND c.deleted_at IS NULL ORDER BY c.created_at LIMIT 150",u.id,p.id),viewerId:u.id,canComment:p.comment_level>=0&&e.level>=p.comment_level&&!u.comments_blocked});}
   if(path[0]==="notifications")return json({notifications:await rows("SELECT id,title,body,read_at,created_at FROM notifications WHERE user_id=? ORDER BY created_at DESC LIMIT 100",u.id)});

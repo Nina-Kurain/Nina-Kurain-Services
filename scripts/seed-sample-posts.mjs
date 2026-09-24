@@ -20,12 +20,12 @@ if (count === 0) {
 
   // 1. Assets
   const assets = [
-    { id: "asset-1", storage_key: "public:nina-kurain-official-portrait.jpg", name: "nina-kurain-official-portrait.jpg", mime: "image/jpeg", bytes: 66723 },
-    { id: "asset-2", storage_key: "public:nina-kurain-editorial-portrait.jpg", name: "nina-kurain-editorial-portrait.jpg", mime: "image/jpeg", bytes: 121555 },
-    { id: "asset-3", storage_key: "public:nina-kurain-digital-creator.jpg", name: "nina-kurain-digital-creator.jpg", mime: "image/jpeg", bytes: 219876 },
-    { id: "asset-4", storage_key: "public:vid-2.mp4", name: "vid-2.mp4", mime: "video/mp4", bytes: 498855 },
-    { id: "asset-5", storage_key: "public:vid-3.mp4", name: "vid-3.mp4", mime: "video/mp4", bytes: 837812 },
-    { id: "asset-6", storage_key: "public:booty.mp4", name: "booty.mp4", mime: "video/mp4", bytes: 1474498 }
+    { id: "asset-1", storage_key: "public:nina-gallery/nina-kurain-01.jpeg", name: "nina-kurain-01.jpeg", mime: "image/jpeg", bytes: 180000 },
+    { id: "asset-2", storage_key: "public:nina-gallery/nina-kurain-02.jpeg", name: "nina-kurain-02.jpeg", mime: "image/jpeg", bytes: 190000 },
+    { id: "asset-3", storage_key: "public:nina-gallery/nina-kurain-03.jpeg", name: "nina-kurain-03.jpeg", mime: "image/jpeg", bytes: 200000 },
+    { id: "asset-4", storage_key: "public:nina-gallery/nina-kurain-04.jpeg", name: "nina-kurain-04.jpeg", mime: "image/jpeg", bytes: 185000 },
+    { id: "asset-5", storage_key: "public:nina-gallery/nina-kurain-05.jpeg", name: "nina-kurain-05.jpeg", mime: "image/jpeg", bytes: 175000 },
+    { id: "asset-6", storage_key: "public:nina-gallery/nina-kurain-06.jpeg", name: "nina-kurain-06.jpeg", mime: "image/jpeg", bytes: 195000 },
   ];
 
   for (const a of assets) {

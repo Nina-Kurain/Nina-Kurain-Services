@@ -5,12 +5,26 @@ import {
   InstagramIcon,
   YoutubeIcon,
   FacebookIcon,
-
   PinterestIcon,
 } from "@/components/social-icons";
+import { NINA_ENTITY } from "@/lib/seo/nina-entity";
+import type { PublicCreatorSettings } from "@/lib/server/public-data";
 
-export function PublicFooter() {
+export interface PublicFooterProps {
+  settings?: Partial<PublicCreatorSettings>;
+}
+
+export function PublicFooter({ settings }: PublicFooterProps = {}) {
   const currentYear = new Date().getFullYear();
+
+  const creatorName = settings?.name || NINA_ENTITY.name;
+  const creatorTitle = settings?.title || NINA_ENTITY.jobTitle;
+
+  const instagramUrl = settings?.instagram || NINA_ENTITY.instagramUrl;
+  const youtubeUrl = settings?.youtube || NINA_ENTITY.youtubeUrl;
+  const facebookUrl = settings?.facebook || NINA_ENTITY.facebookUrl;
+  const pinterestUrl = settings?.pinterest || NINA_ENTITY.pinterestUrl;
+  const vipUrl = settings?.vipUrl || "https://vip.ninakurainservices.in/";
 
   return (
     <footer className="public-footer">
@@ -21,52 +35,51 @@ export function PublicFooter() {
               <BrandLogo height={48} width={74} />
             </Link>
             <div className="footer-entity-tag">
-              <strong>NINA KURAIN</strong>
-              <span>Digital Creator • Model • Creative Artist</span>
+              <strong>{creatorName.toUpperCase()}</strong>
+              <span>{creatorTitle}</span>
             </div>
             <p className="footer-bio-summary">
-              The official and canonical online home of Nina Kurain. Discover editorial photography,
-              cinematography, creator updates, official social channels, and creative collaborations.
+              The official online home of {creatorName}. Discover authentic editorial photography,
+              cinematography, creator updates, and official social channels.
             </p>
             <div className="footer-social-strip">
               <a
-                href="https://www.instagram.com/ninakurain"
+                href={instagramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="social-icon-btn"
-                aria-label="Nina Kurain Instagram"
-                title="Instagram @ninakurain"
+                aria-label={`${creatorName} Instagram`}
+                title="Instagram Profile"
               >
                 <InstagramIcon size={17} />
               </a>
               <a
-                href="https://www.youtube.com/@ninakurain"
+                href={youtubeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="social-icon-btn"
-                aria-label="Nina Kurain YouTube"
-                title="YouTube @ninakurain"
+                aria-label={`${creatorName} YouTube`}
+                title="YouTube Official Channel"
               >
                 <YoutubeIcon size={17} />
               </a>
               <a
-                href="https://www.facebook.com/ninakurain"
+                href={facebookUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="social-icon-btn"
-                aria-label="Nina Kurain Facebook"
-                title="Facebook @ninakurain"
+                aria-label={`${creatorName} Facebook`}
+                title="Facebook Official Page"
               >
                 <FacebookIcon size={17} />
               </a>
-
               <a
-                href="https://www.pinterest.com/ninakurain"
+                href={pinterestUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="social-icon-btn"
-                aria-label="Nina Kurain Pinterest"
-                title="Pinterest @ninakurain"
+                aria-label={`${creatorName} Pinterest`}
+                title="Pinterest Moodboards"
               >
                 <PinterestIcon size={17} />
               </a>
@@ -77,40 +90,49 @@ export function PublicFooter() {
             <div className="footer-col">
               <h4>EXPLORE</h4>
               <ul>
-                <li><Link href="/">Official Home</Link></li>
-                <li><Link href="/about">About Nina</Link></li>
-                <li><Link href="/photos">Photography Gallery</Link></li>
+                <li><Link href="/">Home</Link></li>
+                <li><Link href="/about">About {creatorName}</Link></li>
+                <li><Link href="/biography">Official Biography</Link></li>
+                <li><Link href="/wiki">Wikipedia Archive</Link></li>
+                <li><Link href="/photos">Photo Gallery</Link></li>
+                <li><Link href="/lookbook">Visual Lookbook</Link></li>
                 <li><Link href="/videos">Videos &amp; Motion</Link></li>
+                <li><Link href="/portfolio">Portfolio</Link></li>
                 <li><Link href="/updates">Creator Updates</Link></li>
               </ul>
             </div>
 
             <div className="footer-col">
-              <h4>CONNECT</h4>
+              <h4>INFORMATION</h4>
               <ul>
                 <li><Link href="/socials">Official Socials</Link></li>
-                <li><Link href="/collaborations">Brand Collaborations</Link></li>
+                <li><Link href="/pricing">Memberships &amp; Pricing</Link></li>
+                <li><Link href="/entity">Entity Dossier</Link></li>
+                <li><Link href="/net-worth">Career &amp; Valuation</Link></li>
+                <li><Link href="/creator-tips">Creator Tips &amp; Styling</Link></li>
+                <li><Link href="/collaborations">Collaborate</Link></li>
                 <li><Link href="/press">Press &amp; Media Kit</Link></li>
-                <li><Link href="/contact">Direct Inquiries</Link></li>
+                <li><Link href="/interviews">Creator Notes &amp; Q&amp;A</Link></li>
                 <li><Link href="/faq">Creator FAQ</Link></li>
+                <li><Link href="/contact">Contact Desk</Link></li>
               </ul>
             </div>
 
             <div className="footer-col footer-col-highlight">
-              <h4>PRIVATE ACCESS</h4>
+              <h4>PATRON ACCESS</h4>
               <p className="vip-col-desc">
-                Exclusive creator archives, original private sets, and member-only updates.
+                Exclusive creator archives, extended motion studies, and member-only dispatches.
               </p>
               <a
-                href="https://vip.ninakurainservices.in/"
+                href={vipUrl}
                 className="vip-footer-cta"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <span>Private Creator Club (18+)</span>
+                <span>Member Portal</span>
                 <ArrowUpRight size={14} />
               </a>
-              <small className="vip-disclaimer">Age-restricted • Secure Membership</small>
+              <small className="vip-disclaimer">Supporter Portal • Secure Access</small>
             </div>
           </div>
         </div>
@@ -118,10 +140,7 @@ export function PublicFooter() {
         <div className="public-footer-bottom">
           <div className="footer-legal-copy">
             <p>
-              © {currentYear} Nina Kurain. All rights reserved. The canonical entity identifier for Nina Kurain is{" "}
-              <a href="https://ninakurainservices.in/#nina-kurain" className="entity-link">
-                ninakurainservices.in/#nina-kurain
-              </a>.
+              © {currentYear} {creatorName}. All rights reserved. Official first-party web presence.
             </p>
           </div>
           <div className="footer-legal-links">

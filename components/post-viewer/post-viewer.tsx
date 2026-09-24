@@ -214,7 +214,7 @@ export function PostViewer({
 
               <div className="pv-mobile-creator">
                 <img
-                  src={avatar || "/nina-kurain-official-portrait.webp"}
+                  src={avatar || "/nina-gallery/nina-kurain-01.jpeg"}
                   alt={creatorName}
                   className="pv-mobile-avatar"
                 />
@@ -560,7 +560,7 @@ export function PostViewer({
             {/* Sidebar Header */}
             <div className="pv-desk-head">
               <img
-                src={avatar || "/nina-kurain-official-portrait.webp"}
+                src={avatar || "/nina-gallery/nina-kurain-01.jpeg"}
                 alt={creatorName}
                 className="pv-mobile-avatar"
               />

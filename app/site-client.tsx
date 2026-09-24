@@ -19,21 +19,21 @@ const marqueeMedia: Array<{
   tag: string;
   className: string;
 }> = [
-  { type: "video", src: "/booty.mp4", poster: "/nina-kurain-official-portrait.webp", title: "Arch & Tremble: Bedroom Tape", alt: "Arch & Tremble Bedroom Tape", tag: "🔞 4K UNCENSORED TAPE", className: "tall video-card" },
-  { type: "photo", src: "/nina-kurain-editorial-portrait.webp", title: "Obedient French Maid Fantasy", alt: "Obedient French Maid Fantasy", tag: "💋 RAW FETISH BOUDOIR", className: "portrait photo-card" },
-  { type: "video", src: "/vid-2.mp4", poster: "/nina-kurain-editorial-portrait.webp", title: "Behind Closed Doors: The Tease", alt: "Behind Closed Doors Tease", tag: "🔥 3s HYPNOTIC LOOP", className: "tall video-card" },
-  { type: "photo", src: "/nina-kurain-digital-creator.webp", title: "Tangled Sheets & Bare Desires", alt: "Tangled Sheets Bare Desires", tag: "🔞 UNCENSORED NUDE", className: "tall photo-card" },
-  { type: "video", src: "/vid-3.mp4", poster: "/nina-kurain-digital-creator.webp", title: "Glistening Silk & Wet Desires", alt: "Glistening Silk Wet Desires", tag: "🔞 3s SLOW-MO CLIMAX", className: "portrait video-card" },
-  { type: "photo", src: "/nina-kurain-official-portrait.webp", title: "Undressed Eyes & Sheer Lace", alt: "Undressed Eyes Sheer Lace", tag: "📸 PLEASURE VAULT", className: "portrait photo-card" },
+  { type: "photo", src: "/nina-gallery/nina-kurain-01.jpeg", title: "Official Portraiture Series", alt: "Nina Kurain Official Portrait", tag: "📸 STUDIO ARCHIVE", className: "tall photo-card" },
+  { type: "photo", src: "/nina-gallery/nina-kurain-02.jpeg", title: "Editorial Light Study", alt: "Nina Kurain Editorial Study", tag: "💋 VIP EXCLUSIVE", className: "portrait photo-card" },
+  { type: "photo", src: "/nina-gallery/nina-kurain-03.jpeg", title: "Contemporary Styling Series", alt: "Nina Kurain Contemporary Styling", tag: "✨ HIGH RESOLUTION", className: "tall photo-card" },
+  { type: "photo", src: "/nina-gallery/nina-kurain-04.jpeg", title: "Chiaroscuro Shadows", alt: "Nina Kurain Chiaroscuro", tag: "🔞 MEMBERS ONLY", className: "tall photo-card" },
+  { type: "photo", src: "/nina-gallery/nina-kurain-05.jpeg", title: "Visual Storytelling", alt: "Nina Kurain Visual Storytelling", tag: "🔥 PRIVATE DROP", className: "portrait photo-card" },
+  { type: "photo", src: "/nina-gallery/nina-kurain-06.jpeg", title: "Atmospheric Moodboard", alt: "Nina Kurain Atmospheric Moodboard", tag: "📸 PLEASURE VAULT", className: "portrait photo-card" },
 ];
 
 const vaultItems = [
-  { id: "v1", type: "video", title: "Arch & Tremble: Bedroom Tape (Uncensored)", duration: "08:45 Explicit Tape", views: "14.8k", src: "/booty.mp4", poster: "/nina-kurain-official-portrait.webp", desc: "Slow, breathless arching in dim candlelight. Hands gripping silk sheets, skin flushed hot, and every curve moving completely uninhibited just for you in full 4K 60fps." },
-  { id: "p1", type: "photo", title: "Undressed Eyes & Sheer Lace", duration: "24 Photos", views: "11.9k", src: "/nina-kurain-official-portrait.webp", poster: "/nina-kurain-official-portrait.webp", desc: "The look I give you right before the robe drops to the floor. Biting my lip, heavy breaths, and nothing between us but low amber lighting and bad intentions." },
-  { id: "v2", type: "video", title: "Behind Closed Doors: 3-Second Tease Loop", duration: "03s Infinite Loop", views: "18.2k", src: "/vid-2.mp4", poster: "/nina-kurain-editorial-portrait.webp", desc: "A hypnotic glimpse behind locked doors. Slow seductive sway, parting lips, and an unspoken invitation to touch what isn't meant for public eyes." },
-  { id: "p2", type: "photo", title: "Obedient French Maid Fantasy", duration: "36 Photos", views: "16.4k", src: "/nina-kurain-editorial-portrait.webp", poster: "/nina-kurain-editorial-portrait.webp", desc: "Down on my knees in sheer ruffles and thigh-highs, completely obedient to your deepest desires. Begging to be spoiled, touched, and taken behind locked doors." },
-  { id: "v3", type: "video", title: "Glistening Silk & Wet Desires", duration: "03s VIP Climax", views: "22.7k", src: "/vid-3.mp4", poster: "/nina-kurain-digital-creator.webp", desc: "Drenched in warm oil and slow-motion pleasure. Every breathless arch captured up close, glistening under your gaze until the tension is completely unbearable." },
-  { id: "p3", type: "photo", title: "Midnight Solitude: Bare & Unfiltered", duration: "18 Photos", views: "13.5k", src: "/nina-kurain-digital-creator.webp", poster: "/nina-kurain-digital-creator.webp", desc: "Tossing in tangled sheets at 2 AM with flushed cheeks and aching desire. Raw, unedited, and completely bare with no fabrics left to hide behind." },
+  { id: "p1", type: "photo", title: "Signature Portraiture Collection", duration: "12 Photos", views: "14.8k", src: "/nina-gallery/nina-kurain-01.jpeg", poster: "/nina-gallery/nina-kurain-01.jpeg", desc: "Minimalist elegance, controlled lighting, and authentic creator aesthetics." },
+  { id: "p2", type: "photo", title: "Editorial Styling & Wardrobe", duration: "24 Photos", views: "11.9k", src: "/nina-gallery/nina-kurain-02.jpeg", poster: "/nina-gallery/nina-kurain-02.jpeg", desc: "Contemporary silhouettes and deliberate studio mood." },
+  { id: "p3", type: "photo", title: "Chiaroscuro Fine Art Study", duration: "18 Photos", views: "18.2k", src: "/nina-gallery/nina-kurain-03.jpeg", poster: "/nina-gallery/nina-kurain-03.jpeg", desc: "Intimate chiaroscuro exploration of light and shadow." },
+  { id: "p4", type: "photo", title: "Private Gallery Release", duration: "36 Photos", views: "16.4k", src: "/nina-gallery/nina-kurain-04.jpeg", poster: "/nina-gallery/nina-kurain-04.jpeg", desc: "Exclusive uncut collection from the studio session." },
+  { id: "p5", type: "photo", title: "Autumn Palette Showcase", duration: "20 Photos", views: "22.7k", src: "/nina-gallery/nina-kurain-05.jpeg", poster: "/nina-gallery/nina-kurain-05.jpeg", desc: "Deep amber hues, luxurious textures, and captivating expressions." },
+  { id: "p6", type: "photo", title: "Midnight Solitude Archive", duration: "18 Photos", views: "13.5k", src: "/nina-gallery/nina-kurain-06.jpeg", poster: "/nina-gallery/nina-kurain-06.jpeg", desc: "Raw, unedited, and authentic studio photography." },
 ];
 
 export function LandingExperience({
@@ -199,7 +199,7 @@ export function LandingExperience({
 
             <div className="hero-media-inner">
               <Image
-                src="/nina-kurain-official-portrait.webp"
+                src="/nina-landing-hero.png"
                 alt="Nina Kurain VIP Sanctuary"
                 fill
                 priority
@@ -593,11 +593,11 @@ export function LandingExperience({
 
           <details className="faq-item" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(229,107,131,0.2)", borderRadius: "10px", padding: "18px 22px", cursor: "pointer" }}>
             <summary style={{ fontWeight: 700, fontSize: "16px", color: "#f7e9f0", listStyle: "none", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>How do I unlock free demo content?</span>
+              <span>How do I unlock free preview content?</span>
               <ChevronDown size={18} style={{ color: "#e56b83" }} />
             </summary>
             <p style={{ marginTop: "12px", color: "#bda2b2", fontSize: "14px", lineHeight: 1.6 }}>
-              You can register an account for free at <Link href="/signup" style={{ color: "#e56b83", textDecoration: "underline" }}>ninakurainservices.in/signup</Link>. No payment or credit card is required to enjoy free demo photos, teaser clips, and community posts.
+              You can register an account for free at <Link href="/signup" style={{ color: "#e56b83", textDecoration: "underline" }}>ninakurainservices.in/signup</Link>. No payment or credit card is required to enjoy free preview photos, teaser clips, and community posts.
             </p>
           </details>
 
@@ -682,7 +682,7 @@ export function LandingExperience({
                 <source src={activePreview?.src} type="video/mp4" />
               </video>
             ) : (
-              <Image src={activePreview?.src || "/nina-kurain-official-portrait.webp"} alt={activePreview?.title || "Teaser"} fill style={{ objectFit: "cover", filter: "blur(8px)" }} />
+              <Image src={activePreview?.src || "/nina-gallery/nina-kurain-01.jpeg"} alt={activePreview?.title || "Teaser"} fill style={{ objectFit: "cover", filter: "blur(8px)" }} />
             )}
             <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "rgba(5,2,4,0.65)", color: "#fff", textAlign: "center", padding: "20px" }}>
               <div>

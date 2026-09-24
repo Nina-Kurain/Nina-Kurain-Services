@@ -144,7 +144,7 @@ export function AgeGate() {
       <section className="age-gate-card">
         <div className="age-gate-art" aria-hidden="true">
           <img
-            src="/nina-kurain-digital-creator.webp"
+            src="/nina-caution-18.jpg"
             alt="Nina Kurain 18+ Caution Age Verification"
             className="age-gate-art-img"
             draggable={false}

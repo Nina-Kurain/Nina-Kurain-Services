@@ -1,28 +1,28 @@
-import { PHOTOS_DATA } from "@/lib/photos-data";
+import { getPublicCreatorData } from "@/lib/server/public-data";
+import { NINA_ENTITY } from "@/lib/seo/nina-entity";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const baseUrl = process.env.APP_URL || `${url.protocol}//${url.host}` || "https://ninakurainservices.in";
-  const now = new Date().toISOString().split("T")[0];
+export async function GET() {
+  const baseUrl = NINA_ENTITY.canonicalBase;
+  const { photos } = await getPublicCreatorData();
+
+  const validPhotos = photos.filter(
+    (p) => !p.image.startsWith("/seductive") && (p.image.startsWith("/nina-gallery/") || p.image.startsWith("/api/content/"))
+  );
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-${PHOTOS_DATA.map(
-  (photo) => `  <url>
-    <loc>${baseUrl}/photos/${photo.slug}</loc>
-    <lastmod>${now}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
+${validPhotos
+  .map(
+    (img) => `  <url>
+    <loc>${baseUrl}/photos/${img.slug}</loc>
     <image:image>
-      <image:loc>${baseUrl}${photo.src}</image:loc>
-      <image:title>${photo.heading.replace(/&/g, "&amp;")}</image:title>
-      <image:caption>${photo.caption.replace(/&/g, "&amp;")}</image:caption>
-      <image:license>${baseUrl}/collaborations</image:license>
+      <image:loc>${img.image.startsWith("http") ? img.image : `${baseUrl}${img.image}`}</image:loc>
     </image:image>
   </url>`
-).join("\n")}
+  )
+  .join("\n")}
 </urlset>`;
 
   return new Response(xml, {

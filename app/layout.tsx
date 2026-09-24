@@ -8,6 +8,9 @@ import "./creator-responsive.css";
 import "./legal.css";
 import "./public-creator.css";
 import { AgeGate } from "./age-gate";
+import { ScrollReveal } from "@/components/scroll-reveal";
+import { GoogleAdsenseListener } from "@/components/ads/google-adsense-listener";
+import { NINA_ENTITY } from "@/lib/seo/nina-entity";
 
 const themeBootScript = `(function(){try{
   var t=localStorage.getItem('afterglow-theme')||'system';
@@ -35,46 +38,25 @@ const themeBootScript = `(function(){try{
 const mediaProtectionScript = `(function(){function block(e){var el=e.target;if(el&&el.closest&&el.closest('[data-protected-media],.protected-media-frame')){e.preventDefault();if(e.stopPropagation)e.stopPropagation();return false;}}window.addEventListener('contextmenu',block,true);})();`;
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.APP_URL || "https://ninakurainservices.in"),
+  metadataBase: new URL(process.env.APP_URL || NINA_ENTITY.canonicalBase),
   title: {
-    default: "Nina Kurain | Official Website & Digital Creator",
-    template: "%s | Nina Kurain — Digital Creator",
+    default: "Nina Kurain | Digital Creator — Official Website",
+    template: "%s | Nina Kurain",
   },
-  description:
-    "Discover Nina Kurain, Digital Creator, through official photography, videos, creator updates, collaborations and social profiles.",
-  keywords: [
-    "Nina Kurain",
-    "Nina Kurain Digital Creator",
-    "Nina Kurain official",
-    "Nina Kurain website",
-    "Nina Kurain photos",
-    "Nina Kurain images",
-    "Nina Kurain videos",
-    "Nina Kurain creator",
-    "Nina Kurain model",
-    "Nina Kurain creative artist",
-    "Nina Kurain Instagram",
-    "Nina Kurain YouTube",
-    "Nina Kurain Facebook",
-    "Who is Nina Kurain",
-  ],
-  authors: [{ name: "Nina Kurain", url: "https://ninakurainservices.in" }],
-  creator: "Nina Kurain",
-  publisher: "Nina Kurain",
-  alternates: {
-    canonical: "https://ninakurainservices.in/",
-  },
+  description: NINA_ENTITY.description,
+  authors: [{ name: NINA_ENTITY.name, url: NINA_ENTITY.url }],
+  creator: NINA_ENTITY.name,
+  publisher: NINA_ENTITY.name,
   openGraph: {
-    title: "Nina Kurain | Official Website & Digital Creator",
-    description:
-      "Discover Nina Kurain, Digital Creator, through official photography, videos, creator updates, collaborations and social profiles.",
-    url: "https://ninakurainservices.in",
-    siteName: "Nina Kurain",
+    title: "Nina Kurain | Digital Creator — Official Website",
+    description: NINA_ENTITY.description,
+    url: NINA_ENTITY.canonicalBase,
+    siteName: NINA_ENTITY.name,
     images: [
       {
-        url: "/nina-kurain-official-portrait.webp",
-        width: 1200,
-        height: 630,
+        url: "/nina-kurain-og.jpg",
+        width: 1376,
+        height: 768,
         alt: "Nina Kurain — Digital Creator",
       },
     ],
@@ -83,11 +65,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Nina Kurain | Official Website & Digital Creator",
-    description:
-      "Discover Nina Kurain, Digital Creator, through official photography, videos, creator updates, collaborations and social profiles.",
-    images: ["/nina-kurain-official-portrait.webp"],
-    creator: "@ninakurain",
+    title: "Nina Kurain | Digital Creator — Official Website",
+    description: NINA_ENTITY.description,
+    images: ["/nina-kurain-og.jpg"],
   },
   robots: {
     index: true,
@@ -122,7 +102,6 @@ export const metadata: Metadata = {
   },
 };
 
-
 export const viewport: Viewport = {
   colorScheme: "light dark",
   themeColor: [
@@ -130,115 +109,6 @@ export const viewport: Viewport = {
     { media: "(prefers-color-scheme: light)", color: "#fff8f8" },
   ],
 };
-
-const jsonLdSchema = {
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "WebSite",
-      "@id": "https://ninakurainservices.in/#website",
-      "url": "https://ninakurainservices.in/",
-      "name": "Nina Kurain",
-      "alternateName": "Nina Kurain — Digital Creator",
-      "description": "Official website and creative portfolio of Nina Kurain, Digital Creator.",
-      "publisher": {
-        "@id": "https://ninakurainservices.in/#nina-kurain",
-      },
-    },
-    {
-      "@type": "Person",
-      "@id": "https://ninakurainservices.in/#nina-kurain",
-      "name": "Nina Kurain",
-      "alternateName": ["Nina Kurain", "Nina", "@ninakurain"],
-      "url": "https://ninakurainservices.in/",
-      "jobTitle": "Digital Creator",
-      "description": "Nina Kurain is a Digital Creator known for photography, creative content and online media.",
-      "image": [
-        "https://ninakurainservices.in/nina-kurain-official-portrait.webp",
-        "https://ninakurainservices.in/nina-kurain-digital-creator.webp",
-        "https://ninakurainservices.in/nina-kurain-editorial-portrait.webp",
-        "https://ninakurainservices.in/nina-kurain-fashion-portrait.webp",
-        "https://ninakurainservices.in/nina-kurain-creator-photoshoot.webp",
-        "https://ninakurainservices.in/nina-kurain-studio-portrait.webp"
-      ],
-      "sameAs": [
-        "https://www.instagram.com/ninakurain",
-        "https://www.youtube.com/@ninakurain",
-        "https://www.facebook.com/ninakurain",
-        "https://www.pinterest.com/ninakurain"
-      ],
-      "knowsAbout": [
-        "Digital Creation",
-        "Editorial Photography",
-        "Creative Direction",
-        "Visual Storytelling",
-        "Fashion & Modeling"
-      ]
-    },
-    {
-      "@type": "ProfilePage",
-      "@id": "https://ninakurainservices.in/about/#profile",
-      "url": "https://ninakurainservices.in/about/",
-      "name": "About Nina Kurain — Digital Creator Profile",
-      "mainEntity": {
-        "@id": "https://ninakurainservices.in/#nina-kurain"
-      }
-    },
-    {
-      "@type": "BreadcrumbList",
-      "@id": "https://ninakurainservices.in/#breadcrumbs",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "name": "Nina Kurain",
-          "item": "https://ninakurainservices.in/",
-        },
-      ],
-    },
-    {
-      "@type": "FAQPage",
-      "@id": "https://ninakurainservices.in/#faq",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "Who is Nina Kurain?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Nina Kurain is a Digital Creator known for photography, creative content, studio films and online media.",
-          },
-        },
-        {
-          "@type": "Question",
-          "name": "What is the official website of Nina Kurain?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "The official and canonical website of Nina Kurain is https://ninakurainservices.in/.",
-          },
-        },
-        {
-          "@type": "Question",
-          "name": "Where can I view Nina Kurain's photography and creative work?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Nina Kurain's official photography and creative portfolios are showcased on https://ninakurainservices.in/photos/ and her verified social channels.",
-          },
-        },
-        {
-          "@type": "Question",
-          "name": "How can brands and creators collaborate with Nina Kurain?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Inquiries for creative collaborations, editorial features, and brand partnerships can be submitted through https://ninakurainservices.in/collaborations/ or https://ninakurainservices.in/contact/.",
-          },
-        },
-      ],
-    },
-  ],
-};
-
-import { ScrollReveal } from "@/components/scroll-reveal";
-import { GoogleAdsenseListener } from "@/components/ads/google-adsense-listener";
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
@@ -250,7 +120,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="manifest" href="/site.webmanifest" />
-        <link rel="canonical" href="https://ninakurainservices.in/" />
         {/* Pinterest Domain Verification */}
         <meta
           name="p:domain_verify"
@@ -261,11 +130,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           content={process.env.PINTEREST_SITE_VERIFICATION || "9e061a53d532f22c84aa15f8741f1baf"}
         />
 
-        {/* Schema.org JSON-LD Structured Data for Google Rich Results */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdSchema) }}
-        />
         {/* Google AdSense */}
         <script
           async

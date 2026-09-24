@@ -19,11 +19,6 @@ const nextConfig: NextConfig = {
         permanent: false,
       },
       {
-        source: "/portfolio",
-        destination: "/photos",
-        permanent: true,
-      },
-      {
         source: "/news",
         destination: "/updates",
         permanent: true,

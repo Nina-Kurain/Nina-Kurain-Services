@@ -4,7 +4,7 @@ import Link from "@/components/site-link";
 import { notFound } from "next/navigation";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
-import { PHOTOS_DATA, PhotoItem } from "@/lib/photos-data";
+import { PHOTOS_DATA } from "@/lib/photos-data";
 import {
   Camera,
   ArrowRight,
@@ -15,9 +15,9 @@ import {
   Sparkles,
   Download,
   CheckCircle2,
-  Lock,
-  ArrowUpRight,
 } from "lucide-react";
+import { NINA_ENTITY, getBreadcrumbListSchema, getImageObjectSchema } from "@/lib/seo/nina-entity";
+import { getPublicCreatorData } from "@/lib/server/public-data";
 
 interface PhotoPageProps {
   params: Promise<{ slug: string }>;
@@ -27,36 +27,34 @@ export async function generateStaticParams() {
   return PHOTOS_DATA.map((p) => ({ slug: p.slug }));
 }
 
-import { getPublicCreatorData } from "@/lib/server/public-data";
-
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: PhotoPageProps): Promise<Metadata> {
   const { slug } = await params;
   const { photos, settings } = await getPublicCreatorData();
-  const creatorName = settings?.name || "Nina Kurain";
+  const creatorName = settings?.name || NINA_ENTITY.name;
   const photo = photos.find((p) => p.slug === slug || p.id === slug) || PHOTOS_DATA.find((p) => p.slug === slug);
   if (!photo) return { title: "Photograph Not Found" };
 
   const photoImg = "image" in photo ? photo.image : photo.src;
+  const pageCanonical = `${NINA_ENTITY.canonicalBase}/photos/${photo.slug}`;
 
   return {
     title: `${photo.title} by ${creatorName} | Official Photograph`,
-    description: `${photo.caption} Official photograph of ${creatorName}, Digital Creator and model. Available in high-resolution WebP.`,
-    keywords: [photo.title, creatorName, `${creatorName} Photos`, "Digital Creator"],
+    description: `${photo.caption} Official photograph of ${creatorName}, Digital Creator. Captured under deliberate studio direction.`,
     alternates: {
-      canonical: `https://ninakurainservices.in/photos/${photo.slug}`,
+      canonical: pageCanonical,
     },
     openGraph: {
       title: `${photo.title} | ${creatorName} — Digital Creator`,
       description: photo.caption,
-      url: `https://ninakurainservices.in/photos/${photo.slug}`,
+      url: pageCanonical,
       siteName: creatorName,
       images: [
         {
           url: photoImg,
-          width: photo.width || 1200,
-          height: photo.height || 1600,
+          width: photo.width || 1086,
+          height: photo.height || 1448,
           alt: photo.title,
         },
       ],
@@ -68,7 +66,6 @@ export async function generateMetadata({ params }: PhotoPageProps): Promise<Meta
       title: `${photo.title} | ${creatorName}`,
       description: photo.caption,
       images: [photoImg],
-      creator: "@ninakurain",
     },
   };
 }
@@ -76,7 +73,7 @@ export async function generateMetadata({ params }: PhotoPageProps): Promise<Meta
 export default async function SinglePhotoPage({ params }: PhotoPageProps) {
   const { slug } = await params;
   const { photos, settings } = await getPublicCreatorData();
-  const creatorName = settings?.name || "Nina Kurain";
+  const creatorName = settings?.name || NINA_ENTITY.name;
 
   const rawPhoto = photos.find((p) => p.slug === slug || p.id === slug) || PHOTOS_DATA.find((p) => p.slug === slug);
   if (!rawPhoto) notFound();
@@ -89,75 +86,37 @@ export default async function SinglePhotoPage({ params }: PhotoPageProps) {
     category: rawPhoto.category || "Portraits",
     src: "image" in rawPhoto ? rawPhoto.image : rawPhoto.src,
     alt: "alt" in rawPhoto ? rawPhoto.alt : `${creatorName} — ${rawPhoto.title}`,
-    width: rawPhoto.width || 1200,
-    height: rawPhoto.height || 1600,
+    width: rawPhoto.width || 1086,
+    height: rawPhoto.height || 1448,
     caption: rawPhoto.caption,
     description: rawPhoto.description,
-    datePublished: rawPhoto.datePublished || "2026-09-24",
+    datePublished: rawPhoto.datePublished || "2026-08-15",
     locationCreated: "locationCreated" in rawPhoto ? rawPhoto.locationCreated : "Studio Archive, India",
     tags: "tags" in rawPhoto ? rawPhoto.tags : [creatorName, "Digital Creator", "Photography"],
-    isPremium: Boolean("isPremium" in rawPhoto ? rawPhoto.isPremium : false),
   };
 
-  const relatedPhotos = photos.filter((p) => p.slug !== photo.slug).slice(0, 3);
+  const relatedPhotos = photos
+    .filter((p) => p.slug !== photo.slug && !p.image.startsWith("/nina-kurain") && !p.image.startsWith("/seductive"))
+    .slice(0, 3);
+  const pageUrl = `${NINA_ENTITY.canonicalBase}/photos/${photo.slug}`;
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "ImageObject",
-        "@id": `https://ninakurainservices.in/photos/${photo.slug}/#image`,
-        "url": `https://ninakurainservices.in/photos/${photo.slug}`,
-        "contentUrl": `https://ninakurainservices.in${photo.src}`,
-        "name": photo.heading,
-        "caption": photo.caption,
-        "description": photo.description,
-        "width": photo.width,
-        "height": photo.height,
-        "datePublished": photo.datePublished,
-        "encodingFormat": "image/webp",
-        "author": {
-          "@type": "Person",
-          "@id": "https://ninakurainservices.in/#nina-kurain",
-          "name": "Nina Kurain",
-          "jobTitle": "Digital Creator",
-          "url": "https://ninakurainservices.in/",
-        },
-        "creator": {
-          "@type": "Person",
-          "@id": "https://ninakurainservices.in/#nina-kurain",
-          "name": "Nina Kurain",
-        },
-        "copyrightHolder": {
-          "@type": "Person",
-          "@id": "https://ninakurainservices.in/#nina-kurain",
-          "name": "Nina Kurain",
-        },
-      },
-      {
-        "@type": "BreadcrumbList",
-        "@id": `https://ninakurainservices.in/photos/${photo.slug}/#breadcrumbs`,
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Nina Kurain",
-            "item": "https://ninakurainservices.in/",
-          },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "name": "Photos",
-            "item": "https://ninakurainservices.in/photos",
-          },
-          {
-            "@type": "ListItem",
-            "position": 3,
-            "name": photo.title,
-            "item": `https://ninakurainservices.in/photos/${photo.slug}`,
-          },
-        ],
-      },
+      getImageObjectSchema({
+        url: photo.src,
+        name: photo.heading,
+        caption: photo.caption,
+        description: photo.description,
+        width: photo.width,
+        height: photo.height,
+        datePublished: photo.datePublished,
+      }),
+      getBreadcrumbListSchema([
+        { name: NINA_ENTITY.name, url: `${NINA_ENTITY.canonicalBase}/` },
+        { name: "Photos", url: `${NINA_ENTITY.canonicalBase}/photos` },
+        { name: photo.title, url: pageUrl },
+      ]),
     ],
   };
 
@@ -173,7 +132,7 @@ export default async function SinglePhotoPage({ params }: PhotoPageProps) {
         {/* Breadcrumb Navigation */}
         <div style={{ maxWidth: 1320, margin: "0 auto", padding: "24px clamp(16px, 3.5vw, 40px) 0" }}>
           <nav aria-label="Breadcrumb" style={{ fontSize: "13px", color: "var(--nk-text-subtle)", display: "flex", gap: "8px", alignItems: "center" }}>
-            <Link href="/" style={{ color: "var(--nk-text-muted)" }}>Nina Kurain</Link>
+            <Link href="/" style={{ color: "var(--nk-text-muted)" }}>{creatorName}</Link>
             <span>/</span>
             <Link href="/photos" style={{ color: "var(--nk-text-muted)" }}>Photos</Link>
             <span>/</span>
@@ -191,78 +150,48 @@ export default async function SinglePhotoPage({ params }: PhotoPageProps) {
               overflow: "hidden",
               border: "1px solid var(--nk-border)",
               boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
-              background: "#000"
+              background: "var(--nk-surface-card, #120912)",
+              minHeight: "420px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}>
-              <Image
-                src={photo.src}
-                alt={photo.alt}
-                width={photo.width}
-                height={photo.height}
-                priority
-                unoptimized={photo.src.startsWith("/api/")}
-                style={{
-                  width: "100%",
-                  height: "auto",
-                  display: "block",
-                  filter: photo.isPremium ? "blur(18px) brightness(0.55)" : "none",
-                  transform: photo.isPremium ? "scale(1.04)" : "none",
-                  transition: "filter 0.3s ease",
-                }}
-              />
-
-              {photo.isPremium && (
-                <div
-                  className="locked-card-overlay"
-                  style={{
-                    padding: "36px 24px",
-                    background: "rgba(9, 5, 9, 0.68)",
-                  }}
-                >
-                  <div
-                    className="lock-shield-icon"
-                    style={{ width: "64px", height: "64px", marginBottom: "16px" }}
-                  >
-                    <Lock size={30} />
+              {photo.src.startsWith("/nina-kurain") || photo.src.startsWith("/seductive") ? (
+                <div style={{ textAlign: "center", padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
+                  <div style={{
+                    width: "64px",
+                    height: "64px",
+                    borderRadius: "50%",
+                    background: "rgba(224, 96, 134, 0.12)",
+                    color: "var(--nk-rose-light)",
+                    display: "grid",
+                    placeItems: "center",
+                  }}>
+                    <Camera size={30} />
                   </div>
-                  <span
-                    className="locked-card-tag"
-                    style={{ fontSize: "11px", marginBottom: "10px" }}
-                  >
-                    VIP ARCHIVE EXCLUSIVE (18+)
+                  <span style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.14em", color: "var(--nk-rose)", textTransform: "uppercase" }}>
+                    STUDIO FOLIO ENTRY
                   </span>
-                  <h2
-                    style={{
-                      fontFamily: "var(--nk-font-serif)",
-                      fontSize: "24px",
-                      color: "#ffffff",
-                      margin: "0 0 10px",
-                    }}
-                  >
-                    {photo.title}
+                  <h2 style={{ fontFamily: "var(--nk-font-serif)", fontSize: "22px", margin: 0, color: "var(--nk-text)" }}>
+                    Original Master Negative in Curation
                   </h2>
-                  <p
-                    style={{
-                      fontSize: "13.5px",
-                      color: "rgba(255, 255, 255, 0.78)",
-                      maxWidth: "380px",
-                      margin: "0 0 20px",
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    This photograph is part of Nina Kurain&apos;s Private Creator Sanctuary.
-                    Access uncompressed 4K master files and exclusive companion sets.
+                  <p style={{ maxWidth: "420px", fontSize: "13.5px", color: "var(--nk-text-muted)", margin: 0, lineHeight: 1.6 }}>
+                    This photographic study is in active studio cataloging. Full high-resolution visuals are released via the Creator Studio.
                   </p>
-                  <a
-                    href="https://vip.ninakurainservices.in/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="locked-card-cta"
-                    style={{ padding: "10px 24px", fontSize: "13px" }}
-                  >
-                    <span>Unlock in VIP Sanctuary</span>
-                    <ArrowUpRight size={14} />
-                  </a>
                 </div>
+              ) : (
+                <Image
+                  src={photo.src}
+                  alt={photo.alt}
+                  width={photo.width}
+                  height={photo.height}
+                  priority
+                  style={{
+                    width: "100%",
+                    height: "auto",
+                    display: "block",
+                  }}
+                />
               )}
             </div>
 
@@ -289,6 +218,11 @@ export default async function SinglePhotoPage({ params }: PhotoPageProps) {
 
               <div style={{ color: "var(--nk-text-muted)", fontSize: "15px", lineHeight: 1.7 }}>
                 <p style={{ margin: "0 0 16px" }}>{photo.description}</p>
+                <p style={{ margin: "0" }}>
+                  This photograph represents {creatorName}&apos;s disciplined approach to visual storytelling,
+                  balancing shadow depth, natural skin tones, and texture fidelity. Produced as part of her
+                  ongoing creative dispatches, it reflects her focused aesthetic within contemporary digital creation.
+                </p>
               </div>
 
               {/* Technical Photo Metadata */}
@@ -306,7 +240,7 @@ export default async function SinglePhotoPage({ params }: PhotoPageProps) {
                     Creator
                   </small>
                   <Link href="/about" style={{ color: "var(--nk-text)", fontWeight: 600, fontSize: "14px" }}>
-                    Nina Kurain
+                    {creatorName}
                   </Link>
                 </div>
 
@@ -324,7 +258,7 @@ export default async function SinglePhotoPage({ params }: PhotoPageProps) {
                     Format
                   </small>
                   <strong style={{ color: "var(--nk-text)", fontSize: "14px" }}>
-                    WebP / JPEG
+                    WebP Master
                   </strong>
                 </div>
 
@@ -339,22 +273,10 @@ export default async function SinglePhotoPage({ params }: PhotoPageProps) {
               </div>
 
               <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "10px" }}>
-                {photo.isPremium ? (
-                  <a
-                    href="https://vip.ninakurainservices.in/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-primary"
-                  >
-                    <span>Unlock in VIP Sanctuary</span>
-                    <ArrowUpRight size={14} />
-                  </a>
-                ) : (
-                  <Link href="/collaborations" className="btn-primary">
-                    <span>Licensing Inquiries</span>
-                    <ArrowRight size={14} />
-                  </Link>
-                )}
+                <Link href="/collaborations" className="btn-primary">
+                  <span>Licensing Inquiries</span>
+                  <ArrowRight size={14} />
+                </Link>
                 <Link href="/photos" className="btn-secondary">
                   <ArrowLeft size={14} />
                   <span>Back to Gallery</span>
@@ -365,60 +287,17 @@ export default async function SinglePhotoPage({ params }: PhotoPageProps) {
         </article>
 
         {/* Related Photographs */}
-        <section className="public-section">
-          <div className="section-head">
-            <div className="section-head-copy">
-              <span className="section-kicker">MORE FROM THE ARCHIVE</span>
-              <h2>Related Photographs</h2>
+        {relatedPhotos.length > 0 && (
+          <section className="public-section">
+            <div className="section-head">
+              <div className="section-head-copy">
+                <span className="section-kicker">MORE FROM THE ARCHIVE</span>
+                <h2>Related Photographs</h2>
+              </div>
             </div>
-          </div>
 
-          <div className="photo-grid">
-            {relatedPhotos.map((item) => {
-              const isLocked = Boolean(item.isPremium);
-
-              if (isLocked) {
-                return (
-                  <div key={item.slug} className="photo-card is-locked" title={`${item.title} — VIP Exclusive (18+)`}>
-                    <div className="photo-card-media">
-                      <Image
-                        src={item.image}
-                        alt={`${creatorName} — ${item.title}`}
-                        width={500}
-                        height={625}
-                        unoptimized
-                        className="photo-card-img"
-                      />
-                      <span className="photo-card-tag is-locked">
-                        <Lock size={10} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />
-                        VIP Locked
-                      </span>
-                      <div className="locked-card-overlay">
-                        <div className="lock-shield-icon">
-                          <Lock size={18} />
-                        </div>
-                        <span className="locked-card-tag">VIP ARCHIVE EXCLUSIVE</span>
-                        <strong className="locked-card-title">{item.title}</strong>
-                        <a
-                          href="https://vip.ninakurainservices.in/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="locked-card-cta"
-                        >
-                          <span>Unlock in VIP</span>
-                          <ArrowUpRight size={12} />
-                        </a>
-                      </div>
-                    </div>
-                    <div className="photo-card-details">
-                      <h3>{item.title}</h3>
-                      <p>{item.caption}</p>
-                    </div>
-                  </div>
-                );
-              }
-
-              return (
+            <div className="photo-grid">
+              {relatedPhotos.map((item) => (
                 <Link key={item.slug} href={`/photos/${item.slug}`} className="photo-card">
                   <div className="photo-card-media">
                     <Image
@@ -426,12 +305,11 @@ export default async function SinglePhotoPage({ params }: PhotoPageProps) {
                       alt={`${creatorName} — ${item.title}`}
                       width={500}
                       height={625}
-                      unoptimized
                       className="photo-card-img"
                     />
-                    <span className="photo-card-tag is-demo">
+                    <span className="photo-card-tag is-featured">
                       <Sparkles size={10} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />
-                      Free Demo
+                      Series
                     </span>
                   </div>
                   <div className="photo-card-details">
@@ -439,10 +317,10 @@ export default async function SinglePhotoPage({ params }: PhotoPageProps) {
                     <p>{item.caption}</p>
                   </div>
                 </Link>
-              );
-            })}
-          </div>
-        </section>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
 
       <PublicFooter />

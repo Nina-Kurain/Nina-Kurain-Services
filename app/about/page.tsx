@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "@/components/site-link";
+import Image from "next/image";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
-import { HorizontalScrollGallery } from "@/components/horizontal-scroll-gallery";
-import { PHOTOS_DATA } from "@/lib/photos-data";
 import { rows } from "@/lib/server/db";
 import {
   Camera,
@@ -13,52 +11,42 @@ import {
   ArrowRight,
   ExternalLink,
   Mail,
-  CheckCircle2,
-  ChevronDown,
-  Layers,
-  Heart,
   Palette,
-  Eye,
   Globe2,
 } from "lucide-react";
 import {
   InstagramIcon,
   YoutubeIcon,
   FacebookIcon,
-
   PinterestIcon,
 } from "@/components/social-icons";
+import {
+  NINA_ENTITY,
+  getPersonSchema,
+  getProfilePageSchema,
+  getBreadcrumbListSchema,
+} from "@/lib/seo/nina-entity";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "About Nina Kurain | Digital Creator",
   description:
-    "Official biography and creative profile of Nina Kurain, Digital Creator, model, and creative artist. Explore her photography journey, creative direction, videos, and official social channels.",
-  keywords: [
-    "Nina Kurain",
-    "About Nina Kurain",
-    "Nina Kurain Digital Creator",
-    "Nina Kurain bio",
-    "Nina Kurain model",
-    "Nina Kurain creative artist",
-    "Nina Kurain photography",
-    "Who is Nina Kurain",
-  ],
+    "Official biography and creative profile of Nina Kurain, Digital Creator. Discover her photography, visual direction, videos, and official social channels.",
   alternates: {
-    canonical: "https://ninakurainservices.in/about",
+    canonical: `${NINA_ENTITY.canonicalBase}/about`,
   },
   openGraph: {
     title: "About Nina Kurain | Digital Creator",
     description:
-      "Official biography and creative profile of Nina Kurain, Digital Creator, model, and creative artist.",
-    url: "https://ninakurainservices.in/about",
-    siteName: "Nina Kurain",
+      "Official biography and creative profile of Nina Kurain, Digital Creator.",
+    url: `${NINA_ENTITY.canonicalBase}/about`,
+    siteName: NINA_ENTITY.name,
     images: [
       {
-        url: "/nina-kurain-official-portrait.webp",
-        width: 1200,
-        height: 630,
+        url: "/nina-kurain-og.jpg",
+        width: 1376,
+        height: 768,
         alt: "About Nina Kurain — Digital Creator",
       },
     ],
@@ -69,9 +57,8 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "About Nina Kurain | Digital Creator",
     description:
-      "Official biography and creative profile of Nina Kurain, Digital Creator, model, and creative artist.",
-    images: ["/nina-kurain-official-portrait.webp"],
-    creator: "@ninakurain",
+      "Official biography and creative profile of Nina Kurain, Digital Creator.",
+    images: ["/nina-kurain-og.jpg"],
   },
 };
 
@@ -81,104 +68,22 @@ export default async function AboutPage() {
   );
   const config = Object.fromEntries(settingsRows.map((r) => [r.key, r.value]));
 
-  const instagramUrl = config.creator_instagram || "https://www.instagram.com/ninakurain";
-  const youtubeUrl = config.creator_youtube || "https://www.youtube.com/@ninakurain";
-  const facebookUrl = config.creator_facebook || "https://www.facebook.com/ninakurain";
-  const pinterestUrl = config.creator_pinterest || "https://www.pinterest.com/ninakurain";
+  const instagramUrl = config.creator_instagram || NINA_ENTITY.instagramUrl;
+  const youtubeUrl = config.creator_youtube || NINA_ENTITY.youtubeUrl;
+  const facebookUrl = config.creator_facebook || NINA_ENTITY.facebookUrl;
+  const pinterestUrl = config.creator_pinterest || NINA_ENTITY.pinterestUrl;
 
-  const jsonLdPerson = {
+  const pageUrl = `${NINA_ENTITY.canonicalBase}/about`;
+
+  const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "ProfilePage",
-        "@id": "https://ninakurainservices.in/about/#profile",
-        "url": "https://ninakurainservices.in/about",
-        "name": "About Nina Kurain | Digital Creator",
-        "description":
-          "Official biography and creative profile of Nina Kurain, Digital Creator.",
-        "mainEntity": {
-          "@id": "https://ninakurainservices.in/#nina-kurain",
-        },
-      },
-      {
-        "@type": "Person",
-        "@id": "https://ninakurainservices.in/#nina-kurain",
-        "name": "Nina Kurain",
-        "alternateName": ["Nina Kurain", "Nina", "@ninakurain"],
-        "url": "https://ninakurainservices.in/",
-        "jobTitle": "Digital Creator",
-        "description":
-          "Nina Kurain is a Digital Creator known for photography, creative content, studio films and online media.",
-        "image": [
-          "https://ninakurainservices.in/nina-kurain-official-portrait.webp",
-          "https://ninakurainservices.in/nina-kurain-digital-creator.webp",
-          "https://ninakurainservices.in/nina-kurain-editorial-portrait.webp",
-          "https://ninakurainservices.in/nina-kurain-fashion-portrait.webp",
-          "https://ninakurainservices.in/nina-kurain-creator-photoshoot.webp",
-          "https://ninakurainservices.in/nina-kurain-studio-portrait.webp"
-        ],
-        "sameAs": [
-          instagramUrl,
-          youtubeUrl,
-          facebookUrl,
-          pinterestUrl
-        ],
-        "knowsAbout": [
-          "Digital Creation",
-          "Editorial Photography",
-          "Creative Direction",
-          "Visual Storytelling",
-          "Fashion & Modeling"
-        ]
-      },
-      {
-        "@type": "BreadcrumbList",
-        "@id": "https://ninakurainservices.in/about/#breadcrumbs",
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Nina Kurain",
-            "item": "https://ninakurainservices.in/",
-          },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "name": "About Nina Kurain",
-            "item": "https://ninakurainservices.in/about",
-          },
-        ],
-      },
-      {
-        "@type": "FAQPage",
-        "@id": "https://ninakurainservices.in/about/#faq",
-        "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "Who is Nina Kurain?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Nina Kurain is a Digital Creator, model, and creative artist known for fine-art photography, cinematography, and online media.",
-            },
-          },
-          {
-            "@type": "Question",
-            "name": "What are Nina Kurain's primary creative disciplines?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Nina Kurain's work spans editorial photography, studio lighting design, 4K visual films, fashion modeling, and digital creative direction.",
-            },
-          },
-          {
-            "@type": "Question",
-            "name": "Where are Nina Kurain's official public updates published?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Official updates are published on https://ninakurainservices.in/ and through her verified social channels on Instagram, YouTube, Facebook, and X.",
-            },
-          },
-        ],
-      },
+      getProfilePageSchema(pageUrl, "About Nina Kurain | Digital Creator"),
+      getPersonSchema(),
+      getBreadcrumbListSchema([
+        { name: NINA_ENTITY.name, url: `${NINA_ENTITY.canonicalBase}/` },
+        { name: "About", url: pageUrl },
+      ]),
     ],
   };
 
@@ -186,17 +91,17 @@ export default async function AboutPage() {
     <div className="public-page-wrapper">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdPerson) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <PublicHeader />
 
       <main id="main-content">
-        {/* Entity Hero */}
+        {/* Creator Identity Hero */}
         <section className="creator-hero" aria-label="Nina Kurain Biography">
           <div className="creator-hero-copy">
             <div className="creator-eyebrow">
               <span className="eyebrow-line" />
-              <span>OFFICIAL ENTITY BIOGRAPHY</span>
+              <span>OFFICIAL CREATOR PROFILE</span>
             </div>
 
             <h1 style={{ fontSize: "clamp(32px, 6vw, 76px)" }}>
@@ -205,13 +110,14 @@ export default async function AboutPage() {
             </h1>
 
             <p className="creator-subtitle">
-              Creative Artist • Model • Digital Storyteller
+              Visual Storyteller • Photography &amp; Creative Direction
             </p>
 
             <p className="creator-bio-p">
-              Nina Kurain is a Digital Creator dedicated to exploring the intersections of editorial
-              fashion, fine-art portraiture, and cinematic motion. Through meticulous composition
-              and authentic expression, she crafts a modern visual language that resonates across digital platforms.
+              Nina Kurain is an independent Digital Creator dedicated to exploring the nuances of
+              contemporary editorial styling, portraiture, and visual storytelling. Through thoughtful
+              composition and disciplined aesthetic direction, she documents her creative evolution
+              across digital platforms.
             </p>
 
             <div className="creator-hero-actions">
@@ -225,37 +131,134 @@ export default async function AboutPage() {
             </div>
           </div>
 
-          <div className="creator-hero-media">
+          <div className="creator-hero-media" aria-label="Nina Kurain Official Studio Portrait">
             <div className="hero-portrait-frame">
               <Image
-                src="/nina-kurain-official-portrait.webp"
-                alt="Nina Kurain — Digital Creator official portrait"
-                width={700}
-                height={920}
-                priority
+                src="/nina-gallery/nina-kurain-30.jpeg"
+                alt="Nina Kurain — Digital Creator Official Studio Portrait Frame 30"
+                width={1200}
+                height={1600}
                 className="hero-portrait-img"
+                priority
               />
               <div className="hero-portrait-overlay" />
             </div>
-
-            <div className="hero-floating-badge badge-bottom">
-              <Globe2 size={18} style={{ color: "#e06086" }} />
+            <div className="hero-floating-badge badge-top">
+              <span className="badge-pulse-dot" />
               <div className="badge-text">
-                <strong>ninakurainservices.in</strong>
-                <small>CANONICAL ENTITY HOME</small>
+                <strong>OFFICIAL PORTRAIT</strong>
+                <small>STUDIO ARCHIVE · 2026</small>
+              </div>
+            </div>
+            <div className="hero-floating-badge badge-bottom">
+              <Sparkles size={14} style={{ color: "var(--nk-rose-light)" }} />
+              <div className="badge-text">
+                <strong>NINA KURAIN</strong>
+                <small>FRAME 30 · DIGITAL CREATOR</small>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Narrative Biography */}
+        {/* Official Identity Dossier & Verification */}
+        <section className="public-section" style={{ paddingTop: 0 }}>
+          <div style={{ maxWidth: 840, margin: "0 auto" }}>
+            <div className="dossier-card">
+              <div className="dossier-header">
+                <div className="dossier-monogram">
+                  <span>NK</span>
+                </div>
+                <div className="dossier-title-wrap">
+                  <span className="dossier-kicker">OFFICIAL CREATOR PROFILE</span>
+                  <h3>Nina Kurain</h3>
+                  <span className="dossier-role">Digital Creator • Visual Direction</span>
+                </div>
+              </div>
+
+              <div className="dossier-divider" />
+
+              <div className="dossier-specs">
+                <div className="dossier-spec-item">
+                  <span className="spec-label">Primary Discipline</span>
+                  <span className="spec-value">Editorial Photography &amp; Motion</span>
+                </div>
+                <div className="dossier-spec-item">
+                  <span className="spec-label">Official Domain</span>
+                  <span className="spec-value">ninakurainservices.in</span>
+                </div>
+                <div className="dossier-spec-item">
+                  <span className="spec-label">Primary Instagram</span>
+                  <span className="spec-value">@kurain.bae</span>
+                </div>
+              </div>
+
+              <div className="dossier-portals">
+                <Link href="/photos" className="dossier-portal-link">
+                  <div className="portal-icon"><Camera size={16} /></div>
+                  <div className="portal-info">
+                    <strong>Photographic Series</strong>
+                    <span>Explore original studio works (51 frames)</span>
+                  </div>
+                  <ArrowRight size={14} />
+                </Link>
+
+                <Link href="/portfolio" className="dossier-portal-link">
+                  <div className="portal-icon"><Palette size={16} /></div>
+                  <div className="portal-info">
+                    <strong>Creative Portfolio</strong>
+                    <span>Curated works &amp; commercial campaigns</span>
+                  </div>
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
+
+              <div className="dossier-badge">
+                <Globe2 size={13} style={{ color: "var(--nk-rose-light)" }} />
+                <span>Canonical Profile Anchor • Verified Official</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* In-Depth Narrative Biography & Artistic Journey */}
         <section className="public-section">
           <div className="section-head">
             <div className="section-head-copy">
-              <span className="section-kicker">THE CREATIVE JOURNEY</span>
-              <h2>Vision, Craft &amp; Direction</h2>
+              <span className="section-kicker">ARTISTIC JOURNEY &amp; GENESIS</span>
+              <h2>The Creative Evolution of Nina Kurain</h2>
               <p>
-                A deliberate synthesis of traditional fine-art aesthetics and forward-looking digital media.
+                From intimate studio lighting studies to nationwide digital recognition — documenting a disciplined commitment to authentic visual art.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 32, marginBottom: 48 }}>
+            <div style={{ background: "var(--nk-surface)", border: "1px solid var(--nk-border)", borderRadius: "var(--nk-radius-lg)", padding: "32px", display: "flex", flexDirection: "column", gap: 14 }}>
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--nk-rose-light)", letterSpacing: "0.1em", textTransform: "uppercase" }}>CHAPTER 01</span>
+              <h3 style={{ fontSize: "22px", margin: 0, fontFamily: "var(--nk-font-serif)", color: "var(--nk-text)" }}>Origins &amp; Visual Storytelling</h3>
+              <p style={{ fontSize: "14px", color: "var(--nk-text-muted)", lineHeight: 1.7, margin: 0 }}>
+                Nina Kurain began her digital creative journey with a singular focus: to strip away the synthetic clutter of modern social feeds and return to intentional, sculptural photography. Grounded in classical Indian aesthetics yet influenced by modern European editorial minimalism, her early works explored how lighting, posture, and subtle movement can evoke deep emotional connection.
+              </p>
+            </div>
+
+            <div style={{ background: "var(--nk-surface)", border: "1px solid var(--nk-border)", borderRadius: "var(--nk-radius-lg)", padding: "32px", display: "flex", flexDirection: "column", gap: 14 }}>
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--nk-rose-light)", letterSpacing: "0.1em", textTransform: "uppercase" }}>CHAPTER 02</span>
+              <h3 style={{ fontSize: "22px", margin: 0, fontFamily: "var(--nk-font-serif)", color: "var(--nk-text)" }}>Heritage Meets Contemporary Minimalism</h3>
+              <p style={{ fontSize: "14px", color: "var(--nk-text-muted)", lineHeight: 1.7, margin: 0 }}>
+                A defining hallmark of Nina&apos;s artistic voice is her interpretation of Indian textiles, sarees, and traditional styling through a modern lens. Rather than conventional catalog poses, each photograph treats fabric as an architectural element — celebrating the fluidity of silk, the warmth of earthy tones, and the poise of modern Indian womanhood.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Technical Craft, Lighting & Optics */}
+        <section className="public-section" style={{ paddingTop: 0 }}>
+          <div className="section-head">
+            <div className="section-head-copy">
+              <span className="section-kicker">TECHNICAL METHODOLOGY</span>
+              <h2>Lighting, Optics &amp; Aesthetic Craft</h2>
+              <p>
+                A deliberate synthesis of natural skin fidelity, directional lighting, and disciplined color science.
               </p>
             </div>
           </div>
@@ -263,51 +266,67 @@ export default async function AboutPage() {
           <div className="benefit-grid">
             <article>
               <Palette size={26} />
-              <h3>Aesthetic Philosophy</h3>
+              <h3>Chiaroscuro &amp; Studio Lighting</h3>
               <p>
-                Rooted in chiaroscuro lighting, tactile textures, and refined minimalism. Every photograph
-                is approached as a singular narrative frame rather than a transient social post.
+                Nina utilizes directional softboxes, bounce cards, and ambient golden-hour rim lighting to sculpt natural shadows, highlighting facial architecture without harsh digital flash.
               </p>
             </article>
 
             <article>
               <Camera size={26} />
-              <h3>Photographic Dispatches</h3>
+              <h3>Optical Discipline &amp; Texture</h3>
               <p>
-                From dramatic studio lighting setups to candid outdoor portraits, Nina works across digital
-                medium format and 35mm aesthetics to produce commanding imagery for digital and print media.
+                Captured primarily on prime focal lengths (50mm and 85mm) to maintain natural proportions. Images celebrate real skin textures and fabric weaves with zero plastic over-smoothing.
               </p>
             </article>
 
             <article>
               <Film size={26} />
-              <h3>Cinematic Motion</h3>
+              <h3>Kinetic Cinematography</h3>
               <p>
-                Extending still photography into immersive 4K video essays and reels. Movement, atmosphere,
-                and pacing combine to create evocative visual stories.
+                Translating static portraits into 4K 60fps cinematic reels and motion dispatches. Atmosphere, deliberate pacing, and rich color grading converge to tell intimate visual stories.
               </p>
             </article>
           </div>
+
+          {/* Quick Credential Factsheet */}
+          <div style={{ marginTop: 48, background: "var(--nk-surface-card)", border: "1px solid var(--nk-border)", borderRadius: "var(--nk-radius-lg)", padding: "32px clamp(20px, 4vw, 44px)" }}>
+            <div style={{ textAlign: "center", marginBottom: 28 }}>
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--nk-rose-light)", letterSpacing: "0.1em", textTransform: "uppercase" }}>OFFICIAL DOSSIER SUMMARY</span>
+              <h3 style={{ fontSize: "24px", fontFamily: "var(--nk-font-serif)", margin: "6px 0 0" }}>Creator Specifications &amp; Overview</h3>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 24 }}>
+              <div style={{ borderLeft: "2px solid var(--nk-rose)", paddingLeft: 16 }}>
+                <span style={{ fontSize: "11px", color: "var(--nk-text-subtle)", textTransform: "uppercase", letterSpacing: "0.08em", display: "block" }}>Full Entity Name</span>
+                <strong style={{ fontSize: "15px", color: "var(--nk-text)" }}>Nina Kurain</strong>
+              </div>
+
+              <div style={{ borderLeft: "2px solid var(--nk-rose)", paddingLeft: 16 }}>
+                <span style={{ fontSize: "11px", color: "var(--nk-text-subtle)", textTransform: "uppercase", letterSpacing: "0.08em", display: "block" }}>Primary Occupation</span>
+                <strong style={{ fontSize: "15px", color: "var(--nk-text)" }}>Digital Creator &amp; Visual Artist</strong>
+              </div>
+
+              <div style={{ borderLeft: "2px solid var(--nk-rose)", paddingLeft: 16 }}>
+                <span style={{ fontSize: "11px", color: "var(--nk-text-subtle)", textTransform: "uppercase", letterSpacing: "0.08em", display: "block" }}>Active Works</span>
+                <strong style={{ fontSize: "15px", color: "var(--nk-text)" }}>51 Archival High-Res Master Frames</strong>
+              </div>
+
+              <div style={{ borderLeft: "2px solid var(--nk-rose)", paddingLeft: 16 }}>
+                <span style={{ fontSize: "11px", color: "var(--nk-text-subtle)", textTransform: "uppercase", letterSpacing: "0.08em", display: "block" }}>Official Handle</span>
+                <strong style={{ fontSize: "15px", color: "var(--nk-text)" }}>@kurain.bae</strong>
+              </div>
+            </div>
+          </div>
         </section>
 
-        {/* Selected Images Gallery */}
-        <section className="public-section">
-          <HorizontalScrollGallery
-            photos={PHOTOS_DATA}
-            creatorName="Nina Kurain"
-            title="Signature Portfolio Archive"
-            subtitle="Explore high-resolution editorial portraiture and lighting studies. Free demo works are visible; exclusive VIP frames are locked."
-            showViewAllLink={true}
-          />
-        </section>
-
-        {/* Connected Ecosystem Strip */}
+        {/* Connected Official Channels */}
         <section className="public-section">
           <div className="section-head">
             <div className="section-head-copy">
-              <span className="section-kicker">CANONICAL ECOSYSTEM</span>
-              <h2>Official Channels</h2>
-              <p>Reinforcing Nina Kurain&apos;s digital creator presence across major authoritative networks.</p>
+              <span className="section-kicker">OFFICIAL CHANNELS</span>
+              <h2>Connected Profiles</h2>
+              <p>Official verified social channels and platforms maintained by Nina Kurain.</p>
             </div>
           </div>
 
@@ -315,12 +334,12 @@ export default async function AboutPage() {
             <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="social-card">
               <div className="social-icon-wrapper"><InstagramIcon size={22} /></div>
               <strong>Instagram</strong>
-              <span>@ninakurain</span>
+              <span>@kurain.bae</span>
             </a>
             <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="social-card">
               <div className="social-icon-wrapper"><YoutubeIcon size={22} /></div>
               <strong>YouTube</strong>
-              <span>@ninakurain</span>
+              <span>Official Channel</span>
             </a>
             <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="social-card">
               <div className="social-icon-wrapper"><FacebookIcon size={22} /></div>
@@ -330,37 +349,31 @@ export default async function AboutPage() {
             <a href={pinterestUrl} target="_blank" rel="noopener noreferrer" className="social-card">
               <div className="social-icon-wrapper"><PinterestIcon size={22} /></div>
               <strong>Pinterest</strong>
-              <span>Nina Kurain</span>
+              <span>@NinaKurain</span>
             </a>
           </div>
         </section>
 
-        {/* Private Club Callout */}
+        {/* Inquiries Strip */}
         <div className="vip-banner-wrap">
           <div className="vip-banner">
             <div className="vip-banner-content">
-              <h3>Private Creator Club (18+)</h3>
+              <h3>Collaborations &amp; Creative Inquiries</h3>
               <p>
-                For patrons seeking private studio archives, unreleased sets, and direct member interactions,
-                visit the VIP sanctuary.
+                For editorial licensing, brand collaborations, and creative bookings, reach out directly.
               </p>
             </div>
             <div className="vip-banner-action">
-              <a
-                href="https://vip.ninakurainservices.in/"
-                className="vip-banner-btn"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span>VIP Access (18+)</span>
+              <Link href="/collaborations" className="vip-banner-btn">
+                <span>Get in Touch</span>
                 <ArrowRight size={16} />
-              </a>
+              </Link>
             </div>
           </div>
         </div>
       </main>
 
-      <PublicFooter />
+      <PublicFooter settings={{ name: config.creator_name, bio: config.creator_bio, instagram: instagramUrl, youtube: youtubeUrl, facebook: facebookUrl, pinterest: pinterestUrl, website: config.creator_website }} />
     </div>
   );
 }

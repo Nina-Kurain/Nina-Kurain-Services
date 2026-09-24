@@ -82,7 +82,7 @@ export function AuthForm({mode, linkToken=""}: {linkToken?: string; mode: "login
         <Link href="/" className="wordmark" aria-label="Nina Kurain home"><BrandLogo height={50} width={75} priority /></Link>
         <div className="header-actions">
           <ThemeQuickToggle/>
-          <Link href="/" className="text-link">Back to website</Link>
+          <a href="https://ninakurainservices.in/" className="text-link">Back to website</a>
         </div>
       </header>
 
@@ -90,10 +90,10 @@ export function AuthForm({mode, linkToken=""}: {linkToken?: string; mode: "login
         <div className="auth-photo">
           <div className="auth-video-container">
             <img
-              src="/nina-kurain-editorial-portrait.webp"
-              alt="Nina Kurain Official Studio Portrait"
+              src="/nina-login-card.jpg"
+              alt="Nina Kurain VIP Member Access"
               className="auth-video-element"
-              style={{ objectFit: "cover", width: "100%", height: "100%" }}
+              style={{ objectFit: "cover", width: "100%", height: "100%", display: "block" }}
               draggable={false}
               onContextMenu={(e) => e.preventDefault()}
               onDragStart={(e) => e.preventDefault()}

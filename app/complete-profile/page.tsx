@@ -5,6 +5,10 @@ import { CompleteProfileClient } from "./complete-profile-client";
 export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Complete Your Profile · Nina Kurain Club",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function CompleteProfilePage() {

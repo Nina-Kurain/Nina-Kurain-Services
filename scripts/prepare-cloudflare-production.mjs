@@ -57,7 +57,16 @@ export async function prepareCloudflareProduction() {
   loadEnvFiles();
 
   const configPath = path.join(root, "dist", "server", "wrangler.json");
-  const config = JSON.parse(await readFile(configPath, "utf8"));
+  let rawConfig = "";
+  for (let attempt = 0; attempt < 10; attempt++) {
+    try {
+      rawConfig = await readFile(configPath, "utf8");
+      if (rawConfig) break;
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+  }
+  const config = JSON.parse(rawConfig || "{}");
 
   config.name =
     process.env.CLOUDFLARE_WORKER_NAME ||
