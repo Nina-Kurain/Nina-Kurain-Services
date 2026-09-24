@@ -1,0 +1,1 @@
+ALTER TABLE `subscriptions` ADD `pending_plan_id` text;

@@ -1,0 +1,14 @@
+import {createInterface} from 'node:readline/promises';
+import {randomBytes,scryptSync} from 'node:crypto';
+import {Writable} from 'node:stream';
+let hidden=false;
+const output=new Writable({write(chunk,encoding,done){if(!hidden)process.stdout.write(chunk,encoding);done();}});
+const rl=createInterface({input:process.stdin,output,terminal:true});
+process.stdout.write('Admin password (12–128 characters; input hidden): ');
+hidden=true;
+const password=await rl.question('');
+rl.close();
+if(password.length<12||password.length>128)throw new Error('Use 12–128 characters.');
+const salt=randomBytes(16).toString('hex');
+const hash=scryptSync(password,salt,64,{N:32768,r:8,p:3,maxmem:67108864}).toString('hex');
+process.stdout.write(`\nscrypt$32768$8$3$${salt}$${hash}\n`);
