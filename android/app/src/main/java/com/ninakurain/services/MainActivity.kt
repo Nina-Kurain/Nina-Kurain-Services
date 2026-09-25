@@ -41,15 +41,22 @@ class MainActivity : AppCompatActivity() {
 
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                if (url != null && url.startsWith("https://ninakurainservices.in")) {
-                    view?.loadUrl(url)
-                    return true
+                if (url != null) {
+                    if (url.startsWith("https://vip.ninakurainservices.in") ||
+                        url.startsWith("https://ninakurainservices.in/api") ||
+                        url.contains("razorpay.com") ||
+                        url.contains("accounts.google.com")
+                    ) {
+                        view?.loadUrl(url)
+                        return true
+                    }
                 }
                 return false
             }
         }
 
-        webView.loadUrl("https://ninakurainservices.in")
+        // Exclusively wrap the private VIP member portal
+        webView.loadUrl("https://vip.ninakurainservices.in")
     }
 
     override fun onBackPressed() {

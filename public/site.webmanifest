@@ -1,6 +1,6 @@
 {
-  "name": "Nina Kurain Official",
-  "short_name": "Nina Kurain",
+  "name": "Nina Kurain VIP",
+  "short_name": "Nina VIP",
   "icons": [
     {
       "src": "/favicon-48x48.png",
@@ -25,8 +25,8 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "https://vip.ninakurainservices.in/feed",
+  "scope": "https://vip.ninakurainservices.in/",
   "id": "nina-kurain-vip",
   "theme_color": "#09050a",
   "background_color": "#09050a",

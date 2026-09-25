@@ -83,8 +83,8 @@ class ViewController: UIViewController {
             ])
         }
 
-        // 4. Load the official secure website
-        if let url = URL(string: "https://ninakurainservices.in") {
+        // 4. Load the official secure VIP member portal
+        if let url = URL(string: "https://vip.ninakurainservices.in") {
             let request = URLRequest(url: url)
             webView.load(request)
         }
