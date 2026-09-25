@@ -53,6 +53,7 @@ import {
   captureVideoFrame,
   buildCompositeCssFilter,
 } from "./filter-presets";
+import { processVideoCanvasFallback } from "./video-engine";
 
 export interface Asset {
   id: string;
@@ -539,10 +540,54 @@ export function MediaEditorModal({
             }
           }
 
+          // Process edited video if trimming, adjustments or filters were applied
+          let finalVideoBlob: Blob = item.file;
+          const hasVideoEdits = Boolean(
+            item.videoMeta &&
+            (item.videoMeta.trimStart > 0 || (item.videoMeta.trimEnd > 0 && item.videoMeta.trimEnd < (item.videoMeta.duration || 99999)) ||
+             item.videoMeta.muted ||
+             (item.filterId && item.filterId !== "normal" && item.filterId !== "original") ||
+             (item.adjustments && (item.adjustments.exposure || item.adjustments.contrast || item.adjustments.saturation || item.adjustments.warmth)))
+          );
+
+          if (hasVideoEdits && item.videoMeta) {
+            setProgressMsg(`Encoding edited reel: ${item.name}…`);
+            try {
+              finalVideoBlob = await processVideoCanvasFallback(
+                item.file,
+                {
+                  duration: item.videoMeta.duration || 0,
+                  trimStart: item.videoMeta.trimStart || 0,
+                  trimEnd: item.videoMeta.trimEnd || 0,
+                  coverTimestamp: item.videoMeta.coverTimestamp || 0,
+                  playbackRate: 1,
+                  volume: item.videoMeta.volume ?? 1,
+                  muted: item.videoMeta.muted ?? false,
+                  audioTrack: null
+                },
+                (pct) => {
+                  setProgressPct(Math.round(((i + pct / 200) / items.length) * 100));
+                },
+                item.adjustments,
+                item.filterId,
+                item.filterIntensity
+              );
+            } catch (err) {
+              console.warn("Video encoding fallback to original file:", err);
+              finalVideoBlob = item.file;
+            }
+          }
+
+          const fileToUpload = new File(
+            [finalVideoBlob],
+            item.name.replace(/\.[^/.]+$/, "") + ".mp4",
+            { type: finalVideoBlob.type || "video/mp4" }
+          );
+
           // Upload video file
           setProgressMsg(`Uploading video: ${item.name}…`);
-          const videoAsset = await uploadAsset(item.file, (pct) => {
-            setProgressPct(Math.round(((i + pct / 100) / items.length) * 100));
+          const videoAsset = await uploadAsset(fileToUpload, (pct) => {
+            setProgressPct(Math.round(((i + 0.5 + pct / 200) / items.length) * 100));
           });
           uploadedAssets.push(videoAsset);
         }

@@ -921,3 +921,467 @@ a {
     transition-duration: .01ms !important;
   }
 }
+
+/* ============================================================================ */
+/* NATIVE MOBILE EXPERIENCE SUITE (ANDROID APK & iOS RETINA WEBVIEW)            */
+/* STRICTLY SCOPED TO SCREENS <= 768px - ZERO DESKTOP / PC REGRESSIONS          */
+/* ============================================================================ */
+
+@media (max-width: 768px) {
+  /* 1. Global Touch, Font & Hardware Rendering */
+  html,
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+
+  /* 2. iOS Auto-Zoom Mitigation (Strict 16px minimum on touch inputs) */
+  input,
+  select,
+  textarea,
+  .input,
+  [data-slot="input"],
+  [data-slot="textarea"] {
+    font-size: 16px !important;
+    border-radius: 12px;
+    -webkit-appearance: none;
+  }
+
+  /* 3. Fluid Safe Area Navigation Header (iOS Dynamic Island & Android Status Bar) */
+  .topbar,
+  .app-header.live-header,
+  .app-header:not(.demo-topbar) {
+    padding-top: max(14px, env(safe-area-inset-top)) !important;
+    padding-left: max(16px, env(safe-area-inset-left)) !important;
+    padding-right: max(16px, env(safe-area-inset-right)) !important;
+    min-height: calc(64px + env(safe-area-inset-top));
+    background: rgba(8, 8, 8, 0.92) !important;
+    backdrop-filter: blur(24px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  }
+
+  /* 4. Native App Bottom Navigation Dock (APK & iOS Home Indicator Friendly) */
+  .app-header .app-nav,
+  .live-header .app-nav {
+    height: calc(60px + env(safe-area-inset-bottom)) !important;
+    padding: 0 10px max(10px, env(safe-area-inset-bottom)) !important;
+    background: rgba(10, 8, 10, 0.95) !important;
+    backdrop-filter: blur(28px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+    border-top: 1px solid rgba(224, 72, 108, 0.22) !important;
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.75) !important;
+  }
+
+  .app-header .app-nav a,
+  .live-header .app-nav a {
+    min-height: 48px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.12em !important;
+    color: rgba(248, 246, 243, 0.65) !important;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .app-header .app-nav a.active,
+  .live-header .app-nav a.active {
+    color: #ff85a1 !important;
+  }
+
+  .app-header .app-nav a.active::after,
+  .live-header .app-nav a.active::after {
+    background: #ff2d75 !important;
+    height: 3px !important;
+    top: 4px !important;
+    border-radius: 999px;
+    box-shadow: 0 0 10px rgba(255, 45, 117, 0.8) !important;
+  }
+
+  /* 5. Safe Page Scroll Padding (Content is never cut off by the bottom dock) */
+  .app-page,
+  .app-page:has(> .app-header),
+  .feed-wrap.live-feed,
+  .membership-page,
+  .live-account {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* 6. Tactile Micro-Haptic Tap Feedback (Native App Feel) */
+  button:active,
+  .button:active,
+  .tier-join:active,
+  .app-nav a:active,
+  .price-card:active,
+  .hero-actions > *:active,
+  .live-post-actions button:active {
+    transform: scale(0.972) !important;
+    transition: transform 0.08s ease !important;
+  }
+
+  /* 7. Native Mobile Pricing Cards (Android APK & iOS Memberships) */
+  .pricing-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+    width: 100% !important;
+    max-width: 480px !important;
+    margin: 0 auto !important;
+  }
+
+  .price-card {
+    border-radius: 22px !important;
+    background: rgba(16, 12, 16, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    padding: 28px 20px 24px !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6) !important;
+    min-height: auto !important;
+  }
+
+  .price-card.featured {
+    border: 1.5px solid rgba(224, 72, 108, 0.6) !important;
+    background: radial-gradient(circle at 50% 0%, rgba(182, 59, 84, 0.28) 0%, rgba(16, 12, 16, 0.96) 80%) !important;
+    box-shadow: 0 20px 50px rgba(182, 59, 84, 0.25), 0 0 30px rgba(224, 72, 108, 0.15) !important;
+    transform: none !important;
+  }
+
+  .price-card .tier-name {
+    font-size: 13px !important;
+    letter-spacing: 0.18em !important;
+    color: #ff85a1 !important;
+    margin-bottom: 4px;
+  }
+
+  .price-card .tier-note {
+    font-size: 15px !important;
+    line-height: 1.4;
+    color: #d1cbcb !important;
+    margin: 0 0 16px 0;
+  }
+
+  .price-card .price {
+    font-size: 40px !important;
+    line-height: 1 !important;
+    margin: 12px 0 20px !important;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .price-card .price span {
+    font-size: 13px !important;
+    color: #a39c9c !important;
+  }
+
+  .price-card .platform-tag {
+    font-size: 10px !important;
+    background: rgba(224, 72, 108, 0.25) !important;
+    color: #ff85a1 !important;
+    border: 1px solid rgba(224, 72, 108, 0.4) !important;
+    padding: 3px 10px !important;
+    border-radius: 999px !important;
+    font-weight: 700 !important;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .price-card ul {
+    gap: 12px !important;
+    margin: 0 0 26px !important;
+  }
+
+  .price-card li {
+    font-size: 13.5px !important;
+    line-height: 1.4 !important;
+    color: #e2dcdd !important;
+    gap: 10px !important;
+  }
+
+  .price-card li svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .price-card :is(button, .tier-join) {
+    width: 100% !important;
+    min-height: 52px !important;
+    border-radius: 14px !important;
+    font-size: 12.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.1em !important;
+    text-transform: uppercase !important;
+    background: linear-gradient(135deg, #a92f49 0%, #7a1f33 100%) !important;
+    border: 1px solid rgba(255, 120, 160, 0.35) !important;
+    box-shadow: 0 8px 24px rgba(169, 47, 73, 0.35) !important;
+  }
+
+  .price-card.featured :is(button, .tier-join) {
+    background: linear-gradient(135deg, #e0486c 0%, #a92f49 100%) !important;
+    box-shadow: 0 10px 30px rgba(224, 72, 108, 0.45) !important;
+  }
+
+  /* 8. Mobile Feed & Media Cards (Uncut Edge-to-Edge Clarity) */
+  .live-post {
+    border-radius: 20px !important;
+    background: rgba(18, 14, 18, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5) !important;
+    margin-bottom: 24px !important;
+    overflow: hidden;
+  }
+
+  .live-post .post-meta {
+    padding: 14px 16px 10px !important;
+  }
+
+  .live-post .live-gallery,
+  .live-post .post-media {
+    width: 100% !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+  }
+
+  .live-post .live-gallery img,
+  .live-post .live-gallery video,
+  .live-post .post-media img,
+  .live-post .post-media video {
+    max-height: 70dvh !important;
+    object-fit: cover !important;
+    border-radius: 14px !important;
+  }
+
+  .live-post .post-caption {
+    padding: 12px 16px !important;
+    font-size: 14.5px !important;
+    line-height: 1.55 !important;
+  }
+
+  .live-post .live-post-actions {
+    padding: 10px 16px 14px !important;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .live-post .live-post-actions button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+
+  /* 9. Mobile Sheets & Fullscreen Dialogs */
+  .live-dialog,
+  [data-slot="dialog-content"],
+  .profile-post-dialog,
+  .avatar-crop-dialog {
+    width: calc(100vw - 16px) !important;
+    max-width: 460px !important;
+    max-height: calc(100dvh - 32px) !important;
+    border-radius: 22px !important;
+    padding: 24px 18px !important;
+    margin: auto !important;
+    background: rgba(18, 12, 16, 0.96) !important;
+    backdrop-filter: blur(28px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(160%) !important;
+    border: 1px solid rgba(224, 72, 108, 0.35) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.9) !important;
+  }
+
+  /* 10. Sticky Comment Composer on Mobile */
+  .comment-composer,
+  .cs-composer-wrap {
+    padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    background: rgba(14, 10, 14, 0.96) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  /* 11. Profile, Creator, Vault & Feed Horizontal Touch-Tabs */
+  .profile-tabs,
+  .feed-tabs,
+  .vault-filter-bar {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 8px !important;
+    padding-bottom: 6px !important;
+    width: 100% !important;
+    justify-content: flex-start !important;
+    touch-action: pan-x !important;
+  }
+
+  .profile-tabs::-webkit-scrollbar,
+  .feed-tabs::-webkit-scrollbar,
+  .vault-filter-bar::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .profile-tabs button,
+  .profile-tabs a,
+  .feed-tabs span,
+  .feed-tabs button,
+  .vault-filter-btn {
+    flex: 0 0 auto !important;
+    min-height: 42px !important;
+    padding: 0 16px !important;
+    border-radius: 12px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+  }
+
+  /* 12. Settings & Account Cards */
+  .admin-card,
+  .billing-panel,
+  .appearance-card {
+    border-radius: 20px !important;
+    padding: 20px 16px !important;
+    margin-bottom: 18px !important;
+    overflow: hidden;
+  }
+
+  /* 13. Session & Universal Logout - NEVER Hidden on Any Screen */
+  .app-header .member-chip {
+    display: none !important;
+  }
+
+  .app-header .header-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-left: auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  .app-logout-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    min-height: 38px !important;
+    padding: 0 12px !important;
+    border-radius: 999px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 50 !important;
+    background: rgba(224, 72, 108, 0.18) !important;
+    border: 1px solid rgba(224, 72, 108, 0.45) !important;
+    color: #ff85a1 !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  .app-logout-btn svg {
+    flex-shrink: 0 !important;
+  }
+
+  .session-logout-card .session-logout-row {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .session-logout-card .session-logout-row > * {
+    width: 100% !important;
+    min-height: 48px !important;
+    border-radius: 12px !important;
+    justify-content: center !important;
+  }
+
+  /* 14. Responsive Tables with Fluid Momentum Scroll */
+  .live-table {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-x: contain !important;
+    border-radius: 14px !important;
+    margin: 12px 0 !important;
+  }
+
+  .live-table table {
+    min-width: 520px !important;
+  }
+
+  /* 15. Admin Studio Mobile Header & Navigation */
+  .live-admin .demo-topbar {
+    padding: 12px 14px !important;
+  }
+
+  .live-admin .demo-topbar .live-updating {
+    display: none !important;
+  }
+
+  .live-admin .demo-topbar .header-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: 100% !important;
+    margin-top: 8px !important;
+  }
+
+  .live-admin .demo-topbar .topbar-editor-btn {
+    flex: 1 1 calc(50% - 4px) !important;
+    min-height: 38px !important;
+    font-size: 11.5px !important;
+    padding: 0 8px !important;
+  }
+
+  .live-admin .demo-topbar .live-drawer-nav {
+    width: 100% !important;
+    min-height: 46px !important;
+    font-size: 16px !important;
+    margin-top: 8px !important;
+  }
+
+  /* 16. Bottom Dock Navigation Tab Spacing (4 & 5 Tabs) */
+  .app-header .app-nav a,
+  .live-header .app-nav a {
+    min-height: 48px !important;
+    font-size: clamp(9px, 2.5vw, 11px) !important;
+    padding: 4px 2px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-align: center !important;
+  }
+
+  /* 17. Safe Mobile Scroll Divisions & Padding */
+  .app-page,
+  .feed-wrap.live-feed,
+  .membership-page,
+  .live-account,
+  .creator-profile,
+  .live-admin .demo-content {
+    padding-bottom: calc(90px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* 18. Mobile Gate Aesthetics (App Installation Gateway) */
+  .nk-mobile-gate-card {
+    width: 100% !important;
+    max-width: 400px !important;
+    padding: 28px 20px 24px !important;
+    border-radius: 24px !important;
+  }
+
+  .nk-gate-action-btn {
+    min-height: 52px !important;
+    border-radius: 14px !important;
+    font-size: 14px !important;
+  }
+}
+

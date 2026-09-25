@@ -79,6 +79,7 @@ import {
   getVideoMetadata,
   captureFrameAtTimestamp,
   processVideoWithMediabunny,
+  buildVideoFilterString,
 } from "./video-engine";
 import {
   saveDraftToIndexedDB,
@@ -677,32 +678,54 @@ export function NinaStudioEditor({
         let outputFilename: string;
         let targetCategory: string;
 
-        if (slide.type === "video" && slide.file) {
+        if (slide.type === "video") {
           setProgressMsg(`Encoding video reel with WebCodecs & Mediabunny…`);
           targetCategory = "Reels";
           outputFilename = `edited_${slide.name.replace(/\.[^.]+$/, "")}.mp4`;
 
-          if (slide.videoTimeline) {
+          let videoFile = slide.file;
+          if (!videoFile || videoFile.size === 0) {
+            if (slide.sourceUrl) {
+              try {
+                const res = await fetch(slide.sourceUrl);
+                const blob = await res.blob();
+                videoFile = new File([blob], slide.name || "video.mp4", { type: blob.type || "video/mp4" });
+              } catch (e) {
+                console.warn("Could not fetch remote video file:", e);
+              }
+            }
+          }
+
+          if (videoFile && slide.videoTimeline) {
             outputBlob = await processVideoWithMediabunny(
-              slide.file,
+              videoFile,
               slide.videoTimeline,
               (p) => {
                 setProgressPct(Math.round(((i + p / 100) / slides.length) * 80));
-              }
+              },
+              slide.adjustments,
+              slide.filterId,
+              slide.filterIntensity
             );
+          } else if (videoFile) {
+            outputBlob = videoFile;
           } else {
-            outputBlob = slide.file;
+            outputBlob = new Blob([], { type: "video/mp4" });
           }
 
           // Frame-accurate cover thumbnail
           let coverBlob = slide.coverBlob;
-          if (!coverBlob) {
-            coverBlob = await captureFrameAtTimestamp(
-              slide.file,
-              slide.videoTimeline?.coverTimestamp || 0,
-              1080,
-              1920
-            );
+          if (!coverBlob && videoFile && videoFile.size > 0) {
+            try {
+              coverBlob = await captureFrameAtTimestamp(
+                videoFile,
+                slide.videoTimeline?.coverTimestamp || 0,
+                1080,
+                1920
+              );
+            } catch (err) {
+              console.warn("Cover frame capture fallback:", err);
+            }
           }
 
           const coverAsset = await uploadAssetToDrive(
@@ -929,7 +952,13 @@ export function NinaStudioEditor({
                     muted={currentSlide.videoTimeline?.muted}
                     onTimeUpdate={() => {
                       if (videoPlayerRef.current) {
-                        setVideoCurrentTime(videoPlayerRef.current.currentTime);
+                        const cur = videoPlayerRef.current.currentTime;
+                        setVideoCurrentTime(cur);
+                        const trimStart = currentSlide.videoTimeline?.trimStart || 0;
+                        const trimEnd = currentSlide.videoTimeline?.trimEnd || currentSlide.videoTimeline?.duration || 99999;
+                        if (trimEnd > trimStart + 0.1 && cur >= trimEnd) {
+                          videoPlayerRef.current.currentTime = trimStart;
+                        }
                       }
                     }}
                     onEnded={() => setIsPlaying(false)}
@@ -938,6 +967,11 @@ export function NinaStudioEditor({
                       maxWidth: "100%",
                       borderRadius: 12,
                       objectFit: "contain",
+                      filter: buildVideoFilterString(
+                        currentSlide.adjustments,
+                        currentSlide.filterId,
+                        currentSlide.filterIntensity
+                      ),
                     }}
                   />
 
@@ -1857,8 +1891,133 @@ export function NinaStudioEditor({
                 <div className="panel-section">
                   <h4>Video & Reel Trimming</h4>
 
+                  {/* Trim Sliders & Timing Controls */}
+                  <div className="video-trim-controls" style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 14 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "#e5b9cb" }}>
+                      <span>Selected Duration:</span>
+                      <strong style={{ color: "#ff85a1" }}>
+                        {(
+                          (currentSlide.videoTimeline?.trimEnd || currentSlide.videoTimeline?.duration || 0) -
+                          (currentSlide.videoTimeline?.trimStart || 0)
+                        ).toFixed(1)}s / {(currentSlide.videoTimeline?.duration || 0).toFixed(1)}s
+                      </strong>
+                    </div>
+
+                    {/* Quick Trim Preset Pills */}
+                    <div className="zoom-preset-pills">
+                      {[
+                        { label: "Full Video", start: 0, end: currentSlide.videoTimeline?.duration || 999 },
+                        { label: "15s Story", start: 0, end: Math.min(15, currentSlide.videoTimeline?.duration || 15) },
+                        { label: "30s Reel", start: 0, end: Math.min(30, currentSlide.videoTimeline?.duration || 30) },
+                        { label: "60s Clip", start: 0, end: Math.min(60, currentSlide.videoTimeline?.duration || 60) },
+                      ].map((preset, pIdx) => (
+                        <button
+                          key={pIdx}
+                          type="button"
+                          className="pill-preset"
+                          onClick={() => {
+                            const newStart = preset.start;
+                            const newEnd = preset.end;
+                            if (videoPlayerRef.current) {
+                              videoPlayerRef.current.currentTime = newStart;
+                            }
+                            updateCurrentSlide((prev) => ({
+                              ...prev,
+                              videoTimeline: prev.videoTimeline
+                                ? { ...prev.videoTimeline, trimStart: newStart, trimEnd: newEnd }
+                                : undefined,
+                            }));
+                          }}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Trim Start Slider */}
+                    <div className="slider-group">
+                      <div className="slider-header">
+                        <span>Trim Start: {(currentSlide.videoTimeline?.trimStart || 0).toFixed(1)}s</span>
+                        <button
+                          type="button"
+                          className="btn-text-action"
+                          style={{ fontSize: 11, color: "#ff85a1", cursor: "pointer", background: "none", border: "none" }}
+                          onClick={() => {
+                            const cur = videoPlayerRef.current?.currentTime || 0;
+                            updateCurrentSlide((prev) => ({
+                              ...prev,
+                              videoTimeline: prev.videoTimeline
+                                ? { ...prev.videoTimeline, trimStart: cur }
+                                : undefined,
+                            }));
+                          }}
+                        >
+                          Set to current frame
+                        </button>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={Math.max(0, (currentSlide.videoTimeline?.trimEnd || currentSlide.videoTimeline?.duration || 10) - 0.5)}
+                        step={0.1}
+                        value={currentSlide.videoTimeline?.trimStart || 0}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          if (videoPlayerRef.current && videoPlayerRef.current.currentTime < val) {
+                            videoPlayerRef.current.currentTime = val;
+                          }
+                          updateCurrentSlide((prev) => ({
+                            ...prev,
+                            videoTimeline: prev.videoTimeline
+                              ? { ...prev.videoTimeline, trimStart: val }
+                              : undefined,
+                          }));
+                        }}
+                      />
+                    </div>
+
+                    {/* Trim End Slider */}
+                    <div className="slider-group">
+                      <div className="slider-header">
+                        <span>Trim End: {(currentSlide.videoTimeline?.trimEnd || currentSlide.videoTimeline?.duration || 0).toFixed(1)}s</span>
+                        <button
+                          type="button"
+                          className="btn-text-action"
+                          style={{ fontSize: 11, color: "#ff85a1", cursor: "pointer", background: "none", border: "none" }}
+                          onClick={() => {
+                            const cur = videoPlayerRef.current?.currentTime || (currentSlide.videoTimeline?.duration || 0);
+                            updateCurrentSlide((prev) => ({
+                              ...prev,
+                              videoTimeline: prev.videoTimeline
+                                ? { ...prev.videoTimeline, trimEnd: cur }
+                                : undefined,
+                            }));
+                          }}
+                        >
+                          Set to current frame
+                        </button>
+                      </div>
+                      <input
+                        type="range"
+                        min={Math.min(currentSlide.videoTimeline?.duration || 10, (currentSlide.videoTimeline?.trimStart || 0) + 0.5)}
+                        max={currentSlide.videoTimeline?.duration || 10}
+                        step={0.1}
+                        value={currentSlide.videoTimeline?.trimEnd || currentSlide.videoTimeline?.duration || 10}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          updateCurrentSlide((prev) => ({
+                            ...prev,
+                            videoTimeline: prev.videoTimeline
+                              ? { ...prev.videoTimeline, trimEnd: val }
+                              : undefined,
+                          }));
+                        }}
+                      />
+                    </div>
+                  </div>
+
                   {/* Playback speed selector */}
-                  <div className="speed-selector">
+                  <div className="speed-selector" style={{ marginTop: 16 }}>
                     <span style={{ fontSize: 12, color: "#ccc" }}>Speed:</span>
                     {[0.5, 0.75, 1, 1.25, 1.5, 2].map((sp) => (
                       <button

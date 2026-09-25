@@ -2477,3 +2477,184 @@
   color: #ef4444 !important;
   transform: scale(1.08);
 }
+
+/* ==========================================================================
+   Mobile Studio Editor Optimization Suite (Touch, Small Screens <= 768px)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* Full-bleed mobile app modal dialog */
+  .media-editor-dialog {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    inset: 0 !important;
+    position: fixed !important;
+    z-index: 99999 !important;
+    margin: 0 !important;
+    background: #090508 !important;
+  }
+
+  /* Compact Safe Area Header */
+  .media-editor-header {
+    padding: max(10px, env(safe-area-inset-top)) 14px 10px !important;
+    min-height: 50px !important;
+    gap: 8px !important;
+  }
+
+  .media-editor-header h3,
+  .media-editor-header-title {
+    font-size: 13px !important;
+  }
+
+  .media-editor-header-actions .btn-done {
+    min-height: 36px !important;
+    padding: 0 14px !important;
+    font-size: 12px !important;
+  }
+
+  /* Vertical Split Body (Top Preview, Bottom Controls) */
+  .media-editor-body {
+    flex-direction: column !important;
+    min-height: 0 !important;
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
+  }
+
+  /* Stage / Viewport Top Area */
+  .media-editor-viewport {
+    flex: 0 0 auto !important;
+    height: min(40dvh, 310px) !important;
+    max-height: 40dvh !important;
+    padding: 10px !important;
+    background: #040203 !important;
+  }
+
+  .media-editor-stage,
+  .video-player-stage {
+    max-height: 100% !important;
+    max-width: 100% !important;
+    border-radius: 8px !important;
+  }
+
+  .viewport-position-badge {
+    bottom: 8px !important;
+    font-size: 10px !important;
+    padding: 3px 8px !important;
+  }
+
+  /* Tool Sidebar on Bottom Half */
+  .media-editor-sidebar {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border-left: none !important;
+    border-top: 1px solid rgba(229, 107, 131, 0.22) !important;
+    background: #0f080e !important;
+    overflow: hidden !important;
+  }
+
+  /* Horizontal Scrolling Tool Tabs */
+  .media-editor-tabs {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding: 6px 10px !important;
+    gap: 6px !important;
+    width: 100% !important;
+    background: rgba(16, 8, 14, 0.98) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    flex-shrink: 0 !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+  }
+
+  .media-editor-tabs::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .tab-btn {
+    flex: 0 0 auto !important;
+    min-height: 38px !important;
+    padding: 0 12px !important;
+    font-size: 11.5px !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Scrollable Tools Panel */
+  .media-editor-panel {
+    flex: 1 1 auto !important;
+    padding: 14px 14px calc(24px + env(safe-area-inset-bottom)) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Carousel Slide Strip at Bottom */
+  .media-editor-carousel-bar {
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom)) !important;
+    min-height: 64px !important;
+    background: #080407 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .carousel-strip {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 8px !important;
+  }
+
+  .carousel-strip::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* Aspect Ratio Buttons on Phone */
+  .ratio-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  .ratio-btn {
+    padding: 8px 4px !important;
+    min-height: 48px !important;
+    font-size: 11px !important;
+  }
+
+  /* Filter Presets Carousel */
+  .filters-carousel-grid {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 8px !important;
+    padding-bottom: 6px !important;
+  }
+
+  .filters-carousel-grid::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .filter-card {
+    flex: 0 0 74px !important;
+    min-width: 74px !important;
+  }
+
+  /* Touch-friendly Sliders */
+  input[type="range"] {
+    min-height: 38px !important;
+    touch-action: pan-y !important;
+  }
+}
+

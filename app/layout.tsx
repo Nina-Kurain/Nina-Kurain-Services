@@ -7,9 +7,11 @@ import "../components/media-editor/media-editor.css";
 import "./creator-responsive.css";
 import "./legal.css";
 import "./public-creator.css";
+import "@/security/security.css";
 import { AgeGate } from "./age-gate";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { GoogleAdsenseListener } from "@/components/ads/google-adsense-listener";
+import { SecurityGuard, MobileAppGate } from "@/security";
 import { NINA_ENTITY } from "@/lib/seo/nina-entity";
 
 const themeBootScript = `(function(){try{
@@ -35,7 +37,93 @@ const themeBootScript = `(function(){try{
   document.documentElement.dataset.ageVerified='false';
 }})();`;
 
-const mediaProtectionScript = `(function(){function block(e){var el=e.target;if(el&&el.closest&&el.closest('[data-protected-media],.protected-media-frame')){e.preventDefault();if(e.stopPropagation)e.stopPropagation();return false;}}window.addEventListener('contextmenu',block,true);})();`;
+const mediaProtectionScript = `(function(){
+  try{
+    function block(e){
+      var t=e.target;
+      if(t&&(t.tagName==='IMG'||t.tagName==='VIDEO'||t.tagName==='CANVAS'||(t.closest&&t.closest('[data-protected-media],.protected-media-frame,.photo-card-media,.hero-photo,.marquee-item,.post-media,.gallery-item')))){
+        e.preventDefault();
+        if(e.stopPropagation)e.stopPropagation();
+        return false;
+      }
+    }
+    function engageShield(){
+      document.documentElement.classList.add('nk-screenshot-shield');
+      var toast = document.getElementById('nk-android-system-toast');
+      if (toast) { toast.classList.add('is-visible'); }
+      var curtain = document.getElementById('nk-permanent-security-curtain');
+      if (curtain) { curtain.classList.add('is-active'); }
+    }
+    function releaseShield(){
+      setTimeout(function(){
+        if(document.hasFocus && document.hasFocus()){
+          document.documentElement.classList.remove('nk-screenshot-shield');
+          var toast = document.getElementById('nk-android-system-toast');
+          if (toast) { toast.classList.remove('is-visible'); }
+          var curtain = document.getElementById('nk-permanent-security-curtain');
+          if (curtain) { curtain.classList.remove('is-active'); }
+        }
+      },2400);
+    }
+    window.addEventListener('contextmenu',function(e){
+      var tag=(e.target&&e.target.tagName)||'';
+      if(tag!=='INPUT'&&tag!=='TEXTAREA'){
+        e.preventDefault();
+        if(e.stopPropagation)e.stopPropagation();
+        return false;
+      }
+    },true);
+    window.addEventListener('dragstart',block,true);
+    window.addEventListener('keydown',function(e){
+      var k=e.key,c=e.keyCode||e.which;
+      var ctrl=e.ctrlKey||e.metaKey;
+      if(k==='PrintScreen'||c===44){
+        e.preventDefault();
+        engageShield();
+        setTimeout(releaseShield,2500);
+        return false;
+      }
+      // Mobile Volume Down (Android screenshot) & Volume Up button attempt
+      if(k==='VolumeDown'||k==='AudioVolumeDown'||e.code==='VolumeDown'||c===174||c===25||k==='VolumeUp'||k==='AudioVolumeUp'||e.code==='VolumeUp'||c===175||c===24){
+        engageShield();
+        setTimeout(releaseShield,3000);
+      }
+      if(k==='F12'||c===123){e.preventDefault();engageShield();setTimeout(releaseShield,2000);return false;}
+      if((ctrl||e.metaKey)&&e.shiftKey&&(k==='S'||k==='s'||k==='3'||k==='4'||k==='5')){
+        e.preventDefault();
+        engageShield();
+        setTimeout(releaseShield,2500);
+        return false;
+      }
+      if(ctrl&&(k==='u'||k==='U'||k==='s'||k==='S'||k==='p'||k==='P')){e.preventDefault();return false;}
+      if(ctrl&&e.shiftKey&&(k==='I'||k==='i'||k==='J'||k==='j'||k==='C'||k==='c')){e.preventDefault();return false;}
+    },true);
+    window.addEventListener('keyup',function(e){
+      var k=e.key,c=e.keyCode||e.which;
+      if(k==='PrintScreen'||c===44||k==='VolumeDown'||e.code==='VolumeDown'||k==='VolumeUp'||e.code==='VolumeUp'||c===174||c===175||c===24||c===25){
+        engageShield();
+        setTimeout(releaseShield,2800);
+      }
+    },true);
+    window.addEventListener('blur',function(){
+      engageShield();
+      setTimeout(releaseShield,2600);
+    });
+    window.addEventListener('focus',releaseShield);
+    window.addEventListener('pagehide',engageShield);
+    window.addEventListener('touchstart',function(e){
+      if(e.touches && e.touches.length >= 3){
+        e.preventDefault();
+        engageShield();
+        setTimeout(releaseShield,2500);
+      }
+    },{passive:false});
+    document.addEventListener('visibilitychange',function(){
+      if(document.visibilityState==='hidden'){engageShield();}
+      else{setTimeout(releaseShield,2000);}
+    });
+  }catch(_){}
+})();`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL || NINA_ENTITY.canonicalBase),
@@ -140,6 +228,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <script dangerouslySetInnerHTML={{ __html: mediaProtectionScript }} />
       </head>
       <body>
+        <MobileAppGate />
+        <SecurityGuard />
         <GoogleAdsenseListener />
         <ScrollReveal />
         <AgeGate />

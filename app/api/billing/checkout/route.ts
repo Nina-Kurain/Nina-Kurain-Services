@@ -8,6 +8,10 @@ export async function POST(request:Request){return endpoint(async()=>{
  if(!billingReady())throw new HttpError(503,"Provider test credentials are not configured. No payment has been taken.");
  const plan=await row<Plan>("SELECT * FROM membership_plans WHERE id=? AND active=1 AND level>0",String(v.plan));
  if(!plan)throw new HttpError(400,"Choose an available membership.");
+ const ua = (request.headers.get("user-agent") || "").toLowerCase();
+ const isIos = ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod") || ua.includes("ios") || (typeof v === "object" && (v as any)?.platform === "ios");
+ const effectivePrice = isIos ? plan.price + 50 : plan.price;
+ const targetAmount = effectivePrice * 100;
  const current=await entitlement(u.id);
  const changing=current.subscription?.provider==="razorpay"&&current.level>0;
  if(changing&&current.subscription!.cancel_at_period_end)throw new HttpError(409,"Your current membership is ending. Choose a new plan after its paid period ends.");
@@ -25,8 +29,24 @@ export async function POST(request:Request){return endpoint(async()=>{
  if(!locked)throw new HttpError(409,"Checkout is already being prepared. Please wait.");
  try{
  let providerPlan=plan.provider_plan_id;
- if(!providerPlan){const created=await provider("/plans",{period:"monthly",interval:1,item:{name:plan.name,amount:plan.price*100,currency:"INR",description:plan.description}});if(!created.id)throw new HttpError(502,"Provider plan could not be created.");providerPlan=created.id;await run("UPDATE membership_plans SET provider_plan_id=? WHERE id=? AND price=?",providerPlan,plan.id,plan.price);}
- else{const remote=await provider(`/plans/${providerPlan}`);if(remote.item?.amount!==plan.price*100||remote.item?.currency!=="INR")throw new HttpError(409,"Provider plan pricing does not match. The creator must reconnect this membership.");}
+ if(!providerPlan || isIos){
+   const planName = isIos ? `${plan.name} (iOS Edition)` : plan.name;
+   const planDesc = isIos ? `${plan.description} · iOS Edition (+₹50)` : plan.description;
+   const created=await provider("/plans",{period:"monthly",interval:1,item:{name:planName,amount:targetAmount,currency:"INR",description:planDesc}});
+   if(!created.id)throw new HttpError(502,"Provider plan could not be created.");
+   providerPlan=created.id;
+   if(!isIos){
+     await run("UPDATE membership_plans SET provider_plan_id=? WHERE id=? AND price=?",providerPlan,plan.id,plan.price);
+   }
+ } else {
+   const remote=await provider(`/plans/${providerPlan}`);
+   if(remote.item?.amount!==targetAmount||remote.item?.currency!=="INR"){
+     const created=await provider("/plans",{period:"monthly",interval:1,item:{name:plan.name,amount:targetAmount,currency:"INR",description:plan.description}});
+     if(!created.id)throw new HttpError(502,"Provider plan could not be created.");
+     providerPlan=created.id;
+     await run("UPDATE membership_plans SET provider_plan_id=? WHERE id=? AND price=?",providerPlan,plan.id,plan.price);
+   }
+ }
  if(changing){await provider(`/subscriptions/${current.subscription!.provider_subscription_id}`,{plan_id:providerPlan,schedule_change_at:"cycle_end"},"PATCH");await run("UPDATE subscriptions SET pending_plan_id=?,updated_at=? WHERE id=?",plan.id,Date.now(),current.subscription!.id);return json({message:"Plan change scheduled for your next billing cycle. Your access changes after verified payment for the new plan.",pending:true});}
  const id=crypto.randomUUID();await run("INSERT INTO subscriptions(id,user_id,plan_id,provider,status,created_at,updated_at) VALUES(?,?,?,'razorpay','pending',?,?)",id,u.id,plan.id,now,now);
  let remote;try{remote=await provider("/subscriptions",{plan_id:providerPlan,total_count:120,quantity:1,customer_notify:1,notes:{user_id:u.id,local_subscription_id:id}});}catch(e){await run("UPDATE subscriptions SET status='creation_failed',updated_at=? WHERE id=?",Date.now(),id);throw e;}

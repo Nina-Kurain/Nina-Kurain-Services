@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="accent">#C04A64</color>
+    <color name="background">#080808</color>
+    <color name="ic_launcher_background">#0d070b</color>
+    <color name="primary">#A92F49</color>
+    <color name="primary_dark">#09050A</color>
+    <string name="app_name">Nina Kurain Services</string>
+    <style name="Theme.NinaKurainSecure" parent="Theme.AppCompat.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
+        <item name="android:windowBackground">@color/background</item>
+    </style>
+</resources>

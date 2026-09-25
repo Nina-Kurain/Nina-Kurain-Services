@@ -4,9 +4,9 @@ import Image from "next/image";
 import Link from "@/components/site-link";
 import { BrandLogo } from "@/components/brand-logo";
 import { ArrowRight, Check, ChevronDown, ChevronRight, Flame, LockKeyhole, Menu, Play, Sparkles, Globe2, Film, Camera, Eye, Heart } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Plan } from "@/lib/server/entitlements";
-import { getPlanPricing } from "@/lib/pricing";
+import { getPlanPricing, isIOSClient } from "@/lib/pricing";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ThemeQuickToggle } from "./theme-controls";
 
@@ -53,15 +53,27 @@ export function LandingExperience({
   plans: Plan[];
   socials: Record<string, string>;
 }) {
+  const [isIos, setIsIos] = useState(false);
+  useEffect(() => {
+    setIsIos(isIOSClient());
+  }, []);
+
   const tiers = plans.filter(p => p.level > 0).map(p => {
-    const pricing = getPlanPricing(p);
+    const pricing = getPlanPricing(p, Date.now(), isIos);
     return {
       name: p.name.toUpperCase(),
-      price: `₹${p.price.toLocaleString("en-IN")}`,
+      price: `₹${pricing.currentPrice.toLocaleString("en-IN")}`,
       note: p.description,
       popular: Boolean(p.badge),
       badge: p.badge,
-      features: JSON.parse(p.benefits) as string[],
+      features: (() => {
+        try {
+          const parsed = JSON.parse(p.benefits);
+          return Array.isArray(parsed) ? parsed : [String(parsed)];
+        } catch {
+          return typeof p.benefits === "string" ? p.benefits.split("\n").filter(Boolean) : [];
+        }
+      })(),
       pricing,
     };
   });
@@ -440,6 +452,9 @@ export function LandingExperience({
                   <span className="price-original">₹{tier.pricing.originalPrice.toLocaleString("en-IN")}</span>
                 )}
                 {tier.price}<span>/ month</span>
+                {tier.pricing.isIos && (
+                  <span className="platform-tag" style={{fontSize:"10px",background:"rgba(224,72,108,0.2)",color:"#ff85a1",padding:"2px 8px",borderRadius:"999px",marginLeft:"6px",fontWeight:600}}>iOS Edition</span>
+                )}
               </div>
               {tier.pricing.discountActive && (
                 <div className="discount-info">

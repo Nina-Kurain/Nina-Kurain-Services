@@ -1,0 +1,587 @@
+/**
+ * ============================================================================
+ * NINA KURAIN PERMANENT SECURITY SHIELD STYLESHEET
+ * PATH: /security/security.css
+ * 
+ * CRITICAL DIRECTIVE:
+ * THIS FILE IS PERMANENT CORE SECURITY INFRASTRUCTURE.
+ * DO NOT REMOVE, OVERRIDE, OR WEAKEN THESE RULES IN ANY APPLICATION UPDATE.
+ * ============================================================================
+ */
+
+/* 1. Global Copy & Drag Interception (Desktop & Mobile) */
+html, body {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  -khtml-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* Allow text selection ONLY in explicit user input fields */
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
+}
+
+/* 2. Absolute Media Protection (Images, Videos, Canvas, SVG) */
+img,
+video,
+canvas,
+svg,
+picture,
+[data-protected-media],
+.protected-media-frame,
+.photo-card-media,
+.hero-photo,
+.marquee-item,
+.post-media,
+.story-media,
+.gallery-item {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+  -khtml-user-drag: none !important;
+  -moz-user-drag: none !important;
+  -o-user-drag: none !important;
+  user-drag: none !important;
+  pointer-events: auto;
+}
+
+/* 3. Strip Chrome Native Media Download Buttons & Overflow */
+video::-internal-media-controls-download-button {
+  display: none !important;
+}
+
+video::-webkit-media-controls-enclosure {
+  overflow: hidden !important;
+}
+
+video::-webkit-media-controls-panel {
+  width: calc(100% + 2px) !important;
+}
+
+video::-internal-media-controls-cast-button {
+  display: none !important;
+}
+
+/* 4. Protective Transparent Shield Layer */
+.nk-protected-wrapper {
+  position: relative !important;
+  display: inline-block;
+  overflow: hidden;
+}
+
+.nk-media-shield {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 4 !important;
+  background: transparent !important;
+  pointer-events: auto !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-user-drag: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+/* 5. Anti-Print & Anti-PDF Export Defense */
+@media print {
+  html, body {
+    background: #000000 !important;
+    color: #ffffff !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  body * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  body::after {
+    content: "🔒 NINA KURAIN CONFIDENTIAL · UNAUTHORIZED REPRODUCTION, PRINTING, OR EXPORT IS STRICTLY PROHIBITED BY COPYRIGHT LAW." !important;
+    display: flex !important;
+    visibility: visible !important;
+    position: fixed !important;
+    inset: 0 !important;
+    background: #050505 !important;
+    color: #e06086 !important;
+    font-family: Georgia, serif !important;
+    font-size: 24pt !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    padding: 100pt 40pt !important;
+    line-height: 1.6 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 2147483647 !important;
+    border: 8pt solid #7a1d35 !important;
+  }
+}
+
+/* 6. Instant Whole-Page Screenshot Blackout Engine (Mobile / Desktop / Snipping Tool / PrtScn) */
+html.nk-screenshot-shield,
+html.nk-screenshot-shield body {
+  background: #000000 !important;
+  color: transparent !important;
+}
+
+html.nk-screenshot-shield body > *:not(#nk-permanent-security-curtain):not(.nk-security-toast),
+html.nk-screenshot-shield main,
+html.nk-screenshot-shield header,
+html.nk-screenshot-shield footer,
+html.nk-screenshot-shield nav,
+html.nk-screenshot-shield section,
+html.nk-screenshot-shield article,
+html.nk-screenshot-shield aside:not(#nk-permanent-security-curtain),
+html.nk-screenshot-shield div:not(#nk-permanent-security-curtain):not(.nk-security-toast):not(.nk-curtain-card):not(.nk-curtain-icon),
+html.nk-screenshot-shield p,
+html.nk-screenshot-shield h1,
+html.nk-screenshot-shield h2:not(.nk-curtain-title),
+html.nk-screenshot-shield h3,
+html.nk-screenshot-shield h4,
+html.nk-screenshot-shield a,
+html.nk-screenshot-shield button,
+html.nk-screenshot-shield img,
+html.nk-screenshot-shield video,
+html.nk-screenshot-shield canvas,
+html.nk-screenshot-shield svg:not(.nk-curtain-icon svg) {
+  filter: brightness(0) !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Security Curtain Overlay */
+.nk-security-curtain {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483646 !important;
+  background: #050406 !important;
+  backdrop-filter: blur(60px) saturate(0.5) !important;
+  -webkit-backdrop-filter: blur(60px) saturate(0.5) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 30px !important;
+  text-align: center !important;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity 0.22s ease, visibility 0.22s;
+}
+
+/* ZERO DELAY ON ACTIVATION — Instant for mobile screenshots & desktop capture */
+.nk-security-curtain.is-active,
+html.nk-screenshot-shield .nk-security-curtain {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transition: none !important;
+}
+
+.nk-curtain-card {
+  max-width: 500px;
+  background: rgba(18, 10, 14, 0.95);
+  border: 1px solid rgba(224, 72, 108, 0.45);
+  border-radius: 20px;
+  padding: 40px 34px;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.95), 0 0 50px rgba(182, 59, 84, 0.28);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  animation: nkCurtainPulse 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes nkCurtainPulse {
+  0% { transform: scale(1); box-shadow: 0 28px 70px rgba(0, 0, 0, 0.95), 0 0 30px rgba(182, 59, 84, 0.2); }
+  100% { transform: scale(1.015); box-shadow: 0 32px 80px rgba(0, 0, 0, 0.98), 0 0 60px rgba(224, 72, 108, 0.4); }
+}
+
+.nk-curtain-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #8a1f3a 0%, #220811 100%);
+  border: 1.5px solid rgba(255, 120, 160, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffb3c6;
+  box-shadow: 0 0 30px rgba(224, 72, 108, 0.5);
+}
+
+.nk-curtain-title {
+  font-family: Georgia, serif;
+  font-size: 24px;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.nk-curtain-text {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13.5px;
+  color: #c9b8be;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.nk-curtain-badge {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #ff7593;
+  background: rgba(169, 47, 73, 0.25);
+  border: 1px solid rgba(229, 107, 131, 0.4);
+  padding: 6px 14px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+/* 7. Authentic Android System Toast Pill */
+.nk-security-toast {
+  position: fixed !important;
+  bottom: 48px !important;
+  left: 50% !important;
+  transform: translateX(-50%) translateY(16px) !important;
+  z-index: 2147483647 !important;
+  background: rgba(38, 38, 38, 0.96) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.8) !important;
+  border-radius: 9999px !important;
+  padding: 12px 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #ffffff !important;
+  font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.015em !important;
+  white-space: nowrap !important;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.nk-security-toast.is-visible {
+  opacity: 1 !important;
+  transform: translateX(-50%) translateY(0) !important;
+  pointer-events: auto !important;
+}
+
+.nk-toast-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #a92f49;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.nk-toast-msg {
+  white-space: nowrap;
+}
+
+.nk-toast-msg strong {
+  color: #ff94af;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+/* 8. Mobile App Enforcement Gate */
+.nk-mobile-gate-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483645 !important;
+  background: radial-gradient(circle at 50% 20%, #1a0812 0%, #060307 80%) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px 18px !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nk-mobile-gate-card {
+  width: 100%;
+  max-width: 440px;
+  background: rgba(18, 9, 15, 0.94);
+  border: 1.5px solid rgba(224, 72, 108, 0.35);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.92), 0 0 40px rgba(182, 59, 84, 0.22);
+  border-radius: 24px;
+  padding: 32px 24px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 20px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  margin: auto;
+}
+
+.nk-gate-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.nk-gate-icon-pulse {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nk-gate-icon-pulse::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: rgba(224, 72, 108, 0.25);
+  animation: nkPulse 2s ease-in-out infinite;
+}
+
+@keyframes nkPulse {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.15); opacity: 0.15; }
+}
+
+.nk-gate-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a92f49 0%, #4a0d1b 100%);
+  border: 1.5px solid rgba(255, 120, 160, 0.4);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 24px rgba(224, 72, 108, 0.45);
+  position: relative;
+  z-index: 1;
+}
+
+.nk-gate-badge {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #ff85a1;
+  background: rgba(169, 47, 73, 0.2);
+  border: 1px solid rgba(229, 107, 131, 0.35);
+  padding: 5px 12px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.nk-gate-title {
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.nk-gate-description {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13.5px;
+  color: #cfc2c7;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.nk-gate-description strong {
+  color: #ff9fb5;
+  font-weight: 600;
+}
+
+.nk-gate-features {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.nk-gate-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: #e6dbe0;
+}
+
+.nk-feature-check {
+  color: #e0486c;
+  flex-shrink: 0;
+}
+
+.nk-gate-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nk-gate-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-radius: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14.5px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nk-gate-btn-primary {
+  background: linear-gradient(135deg, #e0486c 0%, #aa2344 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 120, 160, 0.35);
+  box-shadow: 0 6px 20px rgba(224, 72, 108, 0.35);
+}
+
+.nk-gate-btn-primary:active {
+  transform: scale(0.98);
+}
+
+.nk-gate-btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: #f0e6eb;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.nk-gate-btn-secondary:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nk-gate-footer {
+  width: 100%;
+  padding-top: 4px;
+}
+
+.nk-gate-desktop-hint {
+  font-size: 11.5px;
+  color: #9f8d95;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* iOS instructions modal */
+.nk-ios-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(16px);
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.nk-ios-modal-card {
+  width: 100%;
+  max-width: 380px;
+  background: #140a11;
+  border: 1px solid rgba(224, 72, 108, 0.4);
+  border-radius: 20px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+}
+
+.nk-ios-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nk-ios-modal-header h3 {
+  font-family: Georgia, serif;
+  font-size: 18px;
+  color: #fff;
+  margin: 0;
+}
+
+.nk-ios-modal-text {
+  font-size: 13px;
+  color: #cfc2c7;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.nk-ios-instructions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nk-ios-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12.5px;
+  color: #e6dbe0;
+}
+
+.nk-step-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #a92f49;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nk-ios-close-btn {
+  margin-top: 6px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}

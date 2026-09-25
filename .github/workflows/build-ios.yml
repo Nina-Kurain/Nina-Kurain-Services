@@ -1,0 +1,44 @@
+name: Build iOS App
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'ios/**'
+      - '.github/workflows/build-ios.yml'
+
+jobs:
+  build:
+    name: Build Nina Kurain iOS App
+    runs-on: macos-14
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_15.4.app/Contents/Developer
+
+      - name: Build NinaKurain.app
+        run: |
+          cd ios
+          xcodebuild -project NinaKurain.xcodeproj \
+            -scheme NinaKurain \
+            -configuration Release \
+            -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Create Payload and Package IPA
+        run: |
+          cd ios
+          mkdir -p build/Payload
+          cp -r build/Release-iphoneos/NinaKurain.app build/Payload/
+          cd build
+          zip -r NinaKurain-unsigned.ipa Payload
+
+      - name: Upload iOS App Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NinaKurain-iOS-App
+          path: ios/build/NinaKurain-unsigned.ipa

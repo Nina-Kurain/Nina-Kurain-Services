@@ -10,7 +10,19 @@ import { billingReady, provider } from "@/lib/server/billing";
 import { getUserReferralData } from "@/lib/server/referrals";
 type Context={params:Promise<{path:string[]}>};
 export async function GET(request:Request,ctx:Context){return endpoint(async()=>{const {path}=await ctx.params;const url=new URL(request.url);
-  if(path[0]==="plans")return json({plans:await getPlans(),checkoutReady:billingReady(),testMode:env.PAYMENT_MODE!=="live"});
+  if(path[0]==="plans"){
+    const ua = (request.headers.get("user-agent") || "").toLowerCase();
+    const isIos = ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod") || ua.includes("ios") || url.searchParams.get("platform") === "ios";
+    const rawPlans = await getPlans();
+    const plans = rawPlans.map(p => ({
+      ...p,
+      price: p.level > 0 && isIos ? p.price + 50 : p.price,
+      base_price: p.price,
+      is_ios: isIos,
+      surcharge: p.level > 0 && isIos ? 50 : 0
+    }));
+    return json({plans, checkoutReady:billingReady(), testMode:env.PAYMENT_MODE!=="live", isIos, platform: isIos ? "ios" : "android"});
+  }
   const u=await apiAccount();
   if(path[0]==="me"){const {session_hash,...user}=u;return json({user,profile:await row("SELECT bio,username,avatar FROM profiles WHERE user_id=?",u.id),membership:await entitlement(u.id),emailReady:emailReady()});}
   if(path[0]==="referrals")return json(await getUserReferralData(u.id, env.APP_URL || url.origin));
