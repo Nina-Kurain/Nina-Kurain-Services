@@ -29,8 +29,7 @@ function purgeUser(db, userId) {
   // Delete memberships and subscriptions
   db.prepare("DELETE FROM memberships WHERE user_id = ?").run(userId);
   db.prepare("DELETE FROM subscriptions WHERE user_id = ?").run(userId);
-  // Delete payments
-  db.prepare("DELETE FROM payments WHERE user_id = ?").run(userId);
+  // NOTE: Payment transactions are NEVER deleted. They remain permanent and tamper-proof.
   // Delete profile
   db.prepare("DELETE FROM profiles WHERE user_id = ?").run(userId);
   // Delete user record

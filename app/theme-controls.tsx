@@ -7,27 +7,32 @@ export type ThemeChoice = "system" | "dark" | "light";
 const STORAGE_KEY = "afterglow-theme";
 
 function applyTheme(choice: ThemeChoice) {
-  const effective = choice === "system"
-    ? (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")
-    : choice;
+  const effective = choice === "light" ? "light" : "dark";
   document.documentElement.dataset.theme = effective;
   document.documentElement.dataset.themeChoice = choice;
   document.documentElement.style.colorScheme = effective;
+  if (effective === "dark") {
+    document.documentElement.classList.add("dark");
+    document.documentElement.classList.remove("light");
+  } else {
+    document.documentElement.classList.add("light");
+    document.documentElement.classList.remove("dark");
+  }
 }
 
 function useThemeChoice() {
-  const [choice, setChoiceState] = useState<ThemeChoice>("system");
+  const [choice, setChoiceState] = useState<ThemeChoice>("dark");
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    const initial: ThemeChoice = stored === "light" || stored === "dark" ? stored : "system";
+    const initial: ThemeChoice = stored === "light" ? "light" : "dark";
     setChoiceState(initial);
     applyTheme(initial);
     const media = matchMedia("(prefers-color-scheme: light)");
     const syncSystem = () => {
-      const current = (localStorage.getItem(STORAGE_KEY) || "system") as ThemeChoice;
-      if (current === "system") applyTheme("system");
+      const current = (localStorage.getItem(STORAGE_KEY) || "dark") as ThemeChoice;
+      if (current === "system") applyTheme("dark");
     };
-    const syncControls = () => setChoiceState((localStorage.getItem(STORAGE_KEY) || "system") as ThemeChoice);
+    const syncControls = () => setChoiceState((localStorage.getItem(STORAGE_KEY) || "dark") as ThemeChoice);
     media.addEventListener("change", syncSystem);
     addEventListener("afterglow:theme", syncControls);
     return () => {

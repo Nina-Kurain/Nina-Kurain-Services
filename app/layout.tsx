@@ -12,14 +12,22 @@ import { AgeGate } from "./age-gate";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { GoogleAdsenseListener } from "@/components/ads/google-adsense-listener";
 import { SecurityGuard } from "@/security";
+import { MobileAppGate } from "@/security/MobileAppGate";
 import { NINA_ENTITY } from "@/lib/seo/nina-entity";
 
 const themeBootScript = `(function(){try{
-  var t=localStorage.getItem('afterglow-theme')||'system';
-  var e=t==='system'?(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):t;
+  var t=localStorage.getItem('afterglow-theme')||'dark';
+  var e=(t==='light')?'light':'dark';
   document.documentElement.dataset.theme=e;
   document.documentElement.dataset.themeChoice=t;
   document.documentElement.style.colorScheme=e;
+  if(e==='dark'){
+    document.documentElement.classList.add('dark');
+    document.documentElement.classList.remove('light');
+  }else{
+    document.documentElement.classList.add('light');
+    document.documentElement.classList.remove('dark');
+  }
   var host=(window.location.hostname||'').toLowerCase();
   var isVipHost=host.indexOf('vip.')===0;
   var p=(window.location.pathname||'').toLowerCase();
@@ -32,7 +40,9 @@ const themeBootScript = `(function(){try{
   document.documentElement.dataset.ageGate=(!isProtectedPath || v)?'closed':'open';
 }catch(_){
   document.documentElement.dataset.theme='dark';
-  document.documentElement.dataset.themeChoice='system';
+  document.documentElement.dataset.themeChoice='dark';
+  document.documentElement.classList.add('dark');
+  document.documentElement.classList.remove('light');
   document.documentElement.dataset.ageGate='closed';
   document.documentElement.dataset.ageVerified='false';
 }})();`;
@@ -233,6 +243,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <GoogleAdsenseListener />
         <ScrollReveal />
         <AgeGate />
+        <MobileAppGate />
         {children}
       </body>
     </html>

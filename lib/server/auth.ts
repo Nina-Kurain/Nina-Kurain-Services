@@ -51,8 +51,7 @@ export async function purgeUserData(userId: string): Promise<void> {
     // Remove memberships and subscriptions
     sql("DELETE FROM memberships WHERE user_id = ?", userId),
     sql("DELETE FROM subscriptions WHERE user_id = ?", userId),
-    // Remove payment transaction records
-    sql("DELETE FROM payments WHERE user_id = ?", userId),
+    // NOTE: Payment transactions are NEVER deleted. They remain tamper-proof and permanent.
     // Remove referrals and referral rewards
     sql("DELETE FROM referrals WHERE referrer_id = ? OR referred_user_id = ?", userId, userId),
     sql("DELETE FROM referral_rewards WHERE user_id = ?", userId),
@@ -68,6 +67,7 @@ export async function purgeUserData(userId: string): Promise<void> {
  * 1. Any soft-deleted accounts (email ends in @deleted.invalid or active=0 and role='member')
  * 2. Unverified accounts older than 24 hours
  * 3. Expired sessions, tokens, and oauth states
+ * NOTE: Payment records are permanently preserved and never deleted.
  */
 export async function purgeAllDeletedAndExpiredUsers(): Promise<{
   purgedUsers: number;
@@ -88,9 +88,9 @@ export async function purgeAllDeletedAndExpiredUsers(): Promise<{
       purgedCount++;
     }
 
-    // Find unverified member accounts older than 24 hours
+    // Find unverified member accounts older than 24 hours (including legacy accounts without verification)
     const expiredUnverified = await rows<{ id: string }>(
-      "SELECT id FROM users WHERE verified = 0 AND role = 'member' AND created_at <= ?",
+      "SELECT id FROM users WHERE (verified = 0 OR verified IS NULL) AND role = 'member' AND (created_at IS NULL OR created_at <= ?)",
       unverifiedCutoff
     );
     for (const u of expiredUnverified) {
@@ -141,7 +141,20 @@ export async function currentUser(admin = false): Promise<Account | null> {
       await digest(memberToken),
       Date.now()
     );
-    if (member) return member;
+    if (member) {
+      // Strict 24-hour verification enforcement:
+      // If an already-logged-in member has not verified their email within 24 hours of registration,
+      // their account is purged immediately (while preserving all payment records), and session terminated.
+      if (member.role === "member" && !member.verified) {
+        const createdAtMs = Number(member.created_at || 0);
+        const isExpiredUnverified = !createdAtMs || createdAtMs <= (Date.now() - 24 * 3600 * 1000);
+        if (isExpiredUnverified) {
+          await purgeUserData(member.id);
+          return null;
+        }
+      }
+      return member;
+    }
   }
   const adminToken = jar.get(ADMIN_COOKIE)?.value;
   if (adminToken && adminToken.length === 64) {

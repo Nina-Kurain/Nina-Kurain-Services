@@ -38,11 +38,28 @@ export const SiteLink = forwardRef<HTMLAnchorElement, SiteLinkProps>(function Si
     }
   }
 
+  // If on VIP host and clicking logo or root link, redirect to main site
+  let resolvedHref = url;
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname.toLowerCase();
+    if (host.startsWith("vip.") && (url === "/" || rest.className?.includes("wordmark"))) {
+      resolvedHref = "https://ninakurainservices.in";
+    }
+  }
+
   return (
     <a
       ref={ref}
-      href={url}
+      href={resolvedHref}
       onClick={(e) => {
+        if (typeof window !== "undefined") {
+          const host = window.location.hostname.toLowerCase();
+          if (host.startsWith("vip.") && (url === "/" || rest.className?.includes("wordmark"))) {
+            e.preventDefault();
+            window.location.href = "https://ninakurainservices.in";
+            return;
+          }
+        }
         if (onClick) {
           onClick(e);
         }
