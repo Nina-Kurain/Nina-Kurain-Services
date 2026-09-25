@@ -26,6 +26,18 @@ export function SecurityGuard() {
 
     // 2. Subscribe to security violation events
     const unsubscribe = securityEngine.subscribe((detail: SecurityEventDetail) => {
+      const isMobile =
+        typeof window !== "undefined" &&
+        (window.innerWidth <= 820 ||
+          /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
+            navigator.userAgent || ""
+          ));
+
+      // Suppress screenshot dialog and curtain completely on mobile view
+      if (isMobile) {
+        return;
+      }
+
       setToastMessage(detail.message);
       setToastVisible(true);
 

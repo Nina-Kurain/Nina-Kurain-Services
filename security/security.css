@@ -585,3 +585,36 @@ html.nk-screenshot-shield .nk-security-curtain {
   font-weight: 600;
   cursor: pointer;
 }
+
+/* 9. Mobile View Screenshot Dialog Suppression */
+@media (max-width: 820px) {
+  #nk-permanent-security-curtain,
+  .nk-security-curtain,
+  #nk-android-system-toast,
+  .nk-security-toast,
+  #nk-mobile-app-gate,
+  .nk-mobile-gate-backdrop,
+  .nk-ios-modal-overlay {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+  }
+
+  html.nk-screenshot-shield body > *:not(#nk-permanent-security-curtain):not(.nk-security-toast),
+  html.nk-screenshot-shield main,
+  html.nk-screenshot-shield section,
+  html.nk-screenshot-shield div,
+  html.nk-screenshot-shield p,
+  html.nk-screenshot-shield h1,
+  html.nk-screenshot-shield h2,
+  html.nk-screenshot-shield h3,
+  html.nk-screenshot-shield a,
+  html.nk-screenshot-shield button,
+  html.nk-screenshot-shield img,
+  html.nk-screenshot-shield video {
+    filter: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+}

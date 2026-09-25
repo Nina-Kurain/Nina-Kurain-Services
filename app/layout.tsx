@@ -11,7 +11,7 @@ import "@/security/security.css";
 import { AgeGate } from "./age-gate";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { GoogleAdsenseListener } from "@/components/ads/google-adsense-listener";
-import { SecurityGuard, MobileAppGate } from "@/security";
+import { SecurityGuard } from "@/security";
 import { NINA_ENTITY } from "@/lib/seo/nina-entity";
 
 const themeBootScript = `(function(){try{
@@ -47,7 +47,11 @@ const mediaProtectionScript = `(function(){
         return false;
       }
     }
+    function isMobile(){
+      return (typeof window!=='undefined')&&((window.innerWidth<=820)||(/android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent||'')));
+    }
     function engageShield(){
+      if(isMobile()) return;
       document.documentElement.classList.add('nk-screenshot-shield');
       var toast = document.getElementById('nk-android-system-toast');
       if (toast) { toast.classList.add('is-visible'); }
@@ -106,19 +110,16 @@ const mediaProtectionScript = `(function(){
       }
     },true);
     window.addEventListener('blur',function(){
+      if(isMobile()) return;
       engageShield();
       setTimeout(releaseShield,2600);
     });
     window.addEventListener('focus',releaseShield);
-    window.addEventListener('pagehide',engageShield);
-    window.addEventListener('touchstart',function(e){
-      if(e.touches && e.touches.length >= 3){
-        e.preventDefault();
-        engageShield();
-        setTimeout(releaseShield,2500);
-      }
-    },{passive:false});
+    window.addEventListener('pagehide',function(){
+      if(!isMobile()) engageShield();
+    });
     document.addEventListener('visibilitychange',function(){
+      if(isMobile()) return;
       if(document.visibilityState==='hidden'){engageShield();}
       else{setTimeout(releaseShield,2000);}
     });
@@ -228,7 +229,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <script dangerouslySetInnerHTML={{ __html: mediaProtectionScript }} />
       </head>
       <body>
-        <MobileAppGate />
         <SecurityGuard />
         <GoogleAdsenseListener />
         <ScrollReveal />

@@ -258,28 +258,16 @@ class SecurityEngine {
    * Intercepts mobile multi-touch gestures (e.g. 3-finger swipe screenshot on Android).
    */
   private handleTouchStart(e: TouchEvent) {
-    if (e.touches && e.touches.length >= 3) {
-      e.preventDefault();
-      e.stopPropagation();
-      this.triggerScreenshotDefense();
-      this.notify({
-        type: "mobile_capture",
-        message: "Can't take screenshot due to security policy",
-      });
-      return false;
-    }
+    // Suppress mobile screenshot dialog for mobile view
+    return;
   }
 
   /**
    * Intercepts mobile 3-finger swipe movements during screenshot attempt.
    */
   private handleTouchMove(e: TouchEvent) {
-    if (e.touches && e.touches.length >= 3) {
-      e.preventDefault();
-      e.stopPropagation();
-      this.triggerScreenshotDefense();
-      return false;
-    }
+    // Suppress mobile screenshot dialog for mobile view
+    return;
   }
 
   /**
@@ -489,6 +477,10 @@ class SecurityEngine {
    * Triggers the Anti-Screenshot defense: Clears clipboard & engages instant blackout.
    */
   public triggerScreenshotDefense() {
+    // Do not trigger screenshot dialog/blackout on mobile view
+    if (typeof window !== "undefined" && (window.innerWidth <= 820 || /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent || ""))) {
+      return;
+    }
     this.setBlackoutActive(true);
     this.poisonClipboard();
 
