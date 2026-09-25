@@ -5,7 +5,7 @@ import { PublicFooter } from "@/components/public-footer";
 import { getPublicCreatorData } from "@/lib/server/public-data";
 import { ArrowRight } from "lucide-react";
 import { PublicPhotosClient } from "@/components/public-photos-client";
-import { NINA_ENTITY, getBreadcrumbListSchema } from "@/lib/seo/nina-entity";
+import { NINA_ENTITY, getBreadcrumbListSchema, getImageObjectSchema } from "@/lib/seo/nina-entity";
 
 export const dynamic = "force-dynamic";
 
@@ -65,27 +65,23 @@ export default async function PhotosPage() {
       ]),
       ...photos
         .filter((p) => !p.image.startsWith("/nina-kurain") && !p.image.startsWith("/seductive"))
-        .map((photo) => ({
-          "@type": "ImageObject",
-          "@id": `${NINA_ENTITY.canonicalBase}/photos/${photo.slug}/#image`,
-          contentUrl: photo.image.startsWith("http")
-            ? photo.image
-            : `${NINA_ENTITY.canonicalBase}${photo.image}`,
-          url: `${NINA_ENTITY.canonicalBase}/photos/${photo.slug}`,
-          name: photo.title,
-          caption: photo.caption,
-          description: photo.description,
-          width: photo.width || 1086,
-          height: photo.height || 1448,
-          encodingFormat: photo.image.endsWith(".png") ? "image/png" : "image/webp",
-          creator: {
-            "@id": NINA_ENTITY.id,
-          },
-          copyrightHolder: {
-            "@id": NINA_ENTITY.id,
-          },
-          datePublished: photo.datePublished || "2026-08-15",
-        })),
+        .map((photo) =>
+          getImageObjectSchema({
+            id: `${NINA_ENTITY.canonicalBase}/photos/${photo.slug}/#image`,
+            url: photo.image,
+            pageUrl: `${NINA_ENTITY.canonicalBase}/photos/${photo.slug}`,
+            name: photo.title,
+            caption: photo.caption,
+            description: photo.description,
+            width: photo.width || 1086,
+            height: photo.height || 1448,
+            datePublished: photo.datePublished || "2026-08-15",
+            creditText: creatorName,
+            copyrightNotice: `© 2026 ${creatorName}. All rights reserved.`,
+            license: `${NINA_ENTITY.canonicalBase}/terms-and-conditions`,
+            acquireLicensePage: `${NINA_ENTITY.canonicalBase}/photos/${photo.slug}`,
+          })
+        ),
     ],
   };
 

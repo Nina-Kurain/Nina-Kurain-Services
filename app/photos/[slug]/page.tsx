@@ -104,13 +104,19 @@ export default async function SinglePhotoPage({ params }: PhotoPageProps) {
     "@context": "https://schema.org",
     "@graph": [
       getImageObjectSchema({
+        id: `${pageUrl}#image`,
         url: photo.src,
+        pageUrl,
         name: photo.heading,
         caption: photo.caption,
         description: photo.description,
         width: photo.width,
         height: photo.height,
         datePublished: photo.datePublished,
+        creditText: creatorName,
+        copyrightNotice: `© 2026 ${creatorName}. All rights reserved.`,
+        license: `${NINA_ENTITY.canonicalBase}/terms-and-conditions`,
+        acquireLicensePage: pageUrl,
       }),
       getBreadcrumbListSchema([
         { name: NINA_ENTITY.name, url: `${NINA_ENTITY.canonicalBase}/` },

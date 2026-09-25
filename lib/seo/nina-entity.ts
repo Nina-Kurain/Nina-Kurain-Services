@@ -91,6 +91,12 @@ export function getImageObjectSchema(params: {
   width?: number;
   height?: number;
   datePublished?: string;
+  id?: string;
+  pageUrl?: string;
+  creditText?: string;
+  copyrightNotice?: string;
+  license?: string;
+  acquireLicensePage?: string;
 }) {
   const mimeType = params.url.endsWith(".webp")
     ? "image/webp"
@@ -98,11 +104,19 @@ export function getImageObjectSchema(params: {
     ? "image/png"
     : "image/jpeg";
 
+  const absoluteImageUrl = params.url.startsWith("http")
+    ? params.url
+    : `${NINA_ENTITY.canonicalBase}${params.url.startsWith("/") ? "" : "/"}${params.url}`;
+
+  const resolvedPageUrl =
+    params.pageUrl ||
+    (params.id ? params.id.replace(/#image$/, "") : NINA_ENTITY.url);
+
   return {
     "@type": "ImageObject",
-    contentUrl: params.url.startsWith("http")
-      ? params.url
-      : `${NINA_ENTITY.canonicalBase}${params.url.startsWith("/") ? "" : "/"}${params.url}`,
+    ...(params.id ? { "@id": params.id } : {}),
+    contentUrl: absoluteImageUrl,
+    url: resolvedPageUrl,
     name: params.name,
     ...(params.caption ? { caption: params.caption } : {}),
     ...(params.description ? { description: params.description } : {}),
@@ -110,11 +124,25 @@ export function getImageObjectSchema(params: {
     ...(params.height ? { height: params.height } : {}),
     encodingFormat: mimeType,
     ...(params.datePublished ? { datePublished: params.datePublished } : {}),
+    creditText: params.creditText || NINA_ENTITY.name,
+    copyrightNotice:
+      params.copyrightNotice ||
+      `© 2026 ${NINA_ENTITY.name}. All rights reserved.`,
+    license:
+      params.license || `${NINA_ENTITY.canonicalBase}/terms-and-conditions`,
+    acquireLicensePage:
+      params.acquireLicensePage ||
+      resolvedPageUrl ||
+      `${NINA_ENTITY.canonicalBase}/contact`,
     creator: {
       "@id": NINA_ENTITY.id,
+      "@type": "Person",
+      name: NINA_ENTITY.name,
     },
     copyrightHolder: {
       "@id": NINA_ENTITY.id,
+      "@type": "Person",
+      name: NINA_ENTITY.name,
     },
   };
 }
