@@ -26,6 +26,8 @@
     }
   ],
   "start_url": "/",
+  "scope": "/",
+  "id": "nina-kurain-vip",
   "theme_color": "#09050a",
   "background_color": "#09050a",
   "display": "standalone"

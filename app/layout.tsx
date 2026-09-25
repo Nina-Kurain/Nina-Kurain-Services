@@ -192,6 +192,11 @@ export const metadata: Metadata = {
     shortcut: "/favicon.ico",
   },
   manifest: "/site.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Nina Kurain",
+  },
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION || "",
     other: {

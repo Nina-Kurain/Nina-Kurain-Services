@@ -14,8 +14,11 @@ export function MobileAppGate() {
     if (typeof window === "undefined") return;
 
     const ua = navigator.userAgent || "";
-    const isNativeApp = /NinaKurainApp/i.test(ua);
-    if (isNativeApp) return;
+    const isStandalone =
+      (window.navigator as any).standalone === true ||
+      (typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches) ||
+      /NinaKurainApp/i.test(ua);
+    if (isStandalone) return;
 
     const path = pathname.toLowerCase();
     // Admin / Creator studio is 100% exempt from the mobile app gate
@@ -187,50 +190,95 @@ export function MobileAppGate() {
             </span>
           </div>
         ) : osType === "ios" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div
+              style={{
+                background: "rgba(229, 75, 124, 0.09)",
+                border: "1px solid rgba(229, 75, 124, 0.35)",
+                borderRadius: 16,
+                padding: "16px 14px",
+                textAlign: "left",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <Apple size={18} color="#ff85a1" />
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#fff", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  iPhone / iPad Direct Install
+                </span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 9, fontSize: 12.5, color: "#f0dbe5" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                  <span style={{ width: 22, height: 22, borderRadius: "50%", background: "#e54b7c", color: "#fff", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>
+                    1
+                  </span>
+                  <span>
+                    Tap Safari&apos;s <strong>Share</strong> button <span style={{ display: "inline-block", padding: "1px 6px", background: "rgba(255,255,255,0.18)", borderRadius: 5, fontSize: 12 }}>⎋</span> below
+                  </span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                  <span style={{ width: 22, height: 22, borderRadius: "50%", background: "#e54b7c", color: "#fff", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>
+                    2
+                  </span>
+                  <span>
+                    Scroll down and tap <strong>&ldquo;Add to Home Screen&rdquo;</strong> <span style={{ display: "inline-block", padding: "1px 6px", background: "rgba(255,255,255,0.18)", borderRadius: 5, fontSize: 12 }}>➕</span>
+                  </span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                  <span style={{ width: 22, height: 22, borderRadius: "50%", background: "#e54b7c", color: "#fff", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 800, flexShrink: 0 }}>
+                    3
+                  </span>
+                  <span>
+                    Tap <strong>Add</strong> — open Nina from your screen!
+                  </span>
+                </div>
+              </div>
+            </div>
+
             <a
-              href="itms-services://?action=download-manifest&url=https://ninakurainservices.in/downloads/manifest.plist"
+              href="/downloads/NinaKurain.mobileconfig"
+              download="NinaKurain.mobileconfig"
               className="button"
               style={{
                 background: "linear-gradient(135deg, #e54b7c, #982f55)",
                 color: "#fff",
                 fontWeight: 700,
                 borderRadius: 14,
-                minHeight: 52,
+                minHeight: 50,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 8,
-                fontSize: 14,
+                fontSize: 13.5,
                 boxShadow: "0 8px 24px rgba(229, 75, 124, 0.4)",
                 textTransform: "uppercase",
                 letterSpacing: "0.04em",
               }}
             >
               <Apple size={18} />
-              <span>Install on iPhone (Safari)</span>
+              <span>1-Tap Install iOS Profile</span>
             </a>
+
             <a
               href="/downloads/NinaKurain.ipa"
               download="NinaKurain.ipa"
               className="button quiet-button"
               style={{
                 borderRadius: 12,
-                minHeight: 44,
+                minHeight: 42,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 8,
-                fontSize: 12.5,
+                fontSize: 12,
                 color: "#ff85a1",
                 border: "1px solid rgba(224, 72, 108, 0.35)",
               }}
             >
-              <Download size={16} />
-              <span>Download NinaKurain.ipa (Sideload)</span>
+              <Download size={15} />
+              <span>Download .ipa for AltStore / Scarlet</span>
             </a>
-            <span style={{ fontSize: 12, color: "#a5949d" }}>
-              Open in Safari to install directly
+            <span style={{ fontSize: 11.5, color: "#a5949d" }}>
+              Fast 3-second setup · Come inside with me
             </span>
           </div>
         ) : (
@@ -244,12 +292,12 @@ export function MobileAppGate() {
               <Download size={18} /> Download Android App (.apk)
             </a>
             <a
-              href="/downloads/NinaKurain.ipa"
-              download="NinaKurain.ipa"
+              href="/downloads/NinaKurain.mobileconfig"
+              download="NinaKurain.mobileconfig"
               className="button quiet-button"
               style={{ minHeight: 44, borderRadius: 12 }}
             >
-              <Apple size={18} /> Download iOS App (.ipa)
+              <Apple size={18} /> Install iOS App (iPhone / iPad)
             </a>
           </div>
         )}
