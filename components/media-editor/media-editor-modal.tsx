@@ -54,6 +54,7 @@ import {
   buildCompositeCssFilter,
 } from "./filter-presets";
 import { processVideoCanvasFallback } from "./video-engine";
+import { DEFAULT_VIDEO_TIMELINE, DEFAULT_TONE_ADJUSTMENTS } from "./editor-types";
 
 export interface Asset {
   id: string;
@@ -547,7 +548,7 @@ export function MediaEditorModal({
             (item.videoMeta.trimStart > 0 || (item.videoMeta.trimEnd > 0 && item.videoMeta.trimEnd < (item.videoMeta.duration || 99999)) ||
              item.videoMeta.muted ||
              (item.filterId && item.filterId !== "normal" && item.filterId !== "original") ||
-             (item.adjustments && (item.adjustments.exposure || item.adjustments.contrast || item.adjustments.saturation || item.adjustments.warmth)))
+             (item.adjustments && (item.adjustments.brightness || item.adjustments.contrast || item.adjustments.saturation || item.adjustments.warmth)))
           );
 
           if (hasVideoEdits && item.videoMeta) {
@@ -556,19 +557,24 @@ export function MediaEditorModal({
               finalVideoBlob = await processVideoCanvasFallback(
                 item.file,
                 {
+                  ...DEFAULT_VIDEO_TIMELINE,
                   duration: item.videoMeta.duration || 0,
                   trimStart: item.videoMeta.trimStart || 0,
                   trimEnd: item.videoMeta.trimEnd || 0,
                   coverTimestamp: item.videoMeta.coverTimestamp || 0,
-                  playbackRate: 1,
                   volume: item.videoMeta.volume ?? 1,
                   muted: item.videoMeta.muted ?? false,
-                  audioTrack: null
                 },
                 (pct) => {
                   setProgressPct(Math.round(((i + pct / 200) / items.length) * 100));
                 },
-                item.adjustments,
+                item.adjustments
+                  ? {
+                      ...DEFAULT_TONE_ADJUSTMENTS,
+                      ...item.adjustments,
+                      exposure: item.adjustments.brightness,
+                    }
+                  : undefined,
                 item.filterId,
                 item.filterIntensity
               );

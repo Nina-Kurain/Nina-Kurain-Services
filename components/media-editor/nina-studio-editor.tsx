@@ -585,11 +585,16 @@ export function NinaStudioEditor({
         }
       };
 
+      if (!file) {
+        reject(new Error("No file content provided for upload."));
+        return;
+      }
+
       const form = new FormData();
       const actualFile =
         file instanceof File
           ? file
-          : new File([file], filename, { type: file.type || "application/octet-stream" });
+          : new File([file], filename, { type: (file as Blob).type || "application/octet-stream" });
 
       form.set("file", actualFile);
       form.set("category", category);
@@ -728,16 +733,24 @@ export function NinaStudioEditor({
             }
           }
 
-          const coverAsset = await uploadAssetToDrive(
-            coverBlob,
-            `cover_${slide.name.replace(/\.[^.]+$/, "")}.jpg`,
-            "Covers"
-          );
+          let coverAssetId: string | undefined;
+          if (coverBlob && coverBlob.size > 0) {
+            try {
+              const coverAsset = await uploadAssetToDrive(
+                coverBlob,
+                `cover_${slide.name.replace(/\.[^.]+$/, "")}.jpg`,
+                "Covers"
+              );
+              coverAssetId = coverAsset.id;
+              if (!mainCoverId) mainCoverId = coverAsset.id;
+            } catch (covErr) {
+              console.warn("Cover upload fallback:", covErr);
+            }
+          }
 
-          if (!mainCoverId) mainCoverId = coverAsset.id;
           dbItemLinks.push({
             sourceId: sourceMediaId,
-            coverId: coverAsset.id,
+            ...(coverAssetId ? { coverId: coverAssetId } : {}),
           });
         } else {
           // Photo slide export via Fabric

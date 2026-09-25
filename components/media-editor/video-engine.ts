@@ -79,10 +79,17 @@ export function captureFrameAtTimestamp(
 
     video.onloadedmetadata = () => {
       const boundedTime = Math.max(0, Math.min(timestampSec, (video.duration || 1) - 0.05));
-      video.currentTime = boundedTime;
+      if (boundedTime <= 0.02) {
+        // At 0s, frame is ready on loadeddata
+        video.onloadeddata = () => renderFrame();
+        // If loadeddata already occurred
+        if (video.readyState >= 2) renderFrame();
+      } else {
+        video.currentTime = boundedTime;
+      }
     };
 
-    video.onseeked = () => {
+    const renderFrame = () => {
       if (hasResolved) return;
       hasResolved = true;
 
@@ -123,6 +130,20 @@ export function captureFrameAtTimestamp(
         reject(err);
       }
     };
+
+    video.onseeked = renderFrame;
+
+    // Safety timeout so video frame extraction never hangs permanently
+    setTimeout(() => {
+      if (!hasResolved) {
+        if (video.readyState >= 1) {
+          renderFrame();
+        } else {
+          cleanUp();
+          reject(new Error("Video thumbnail capture timed out"));
+        }
+      }
+    }, 6000);
 
     video.onerror = () => {
       cleanUp();

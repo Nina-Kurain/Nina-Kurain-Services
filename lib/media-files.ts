@@ -19,10 +19,15 @@ export function detectMedia(bytes: Uint8Array): { mime: string; type: "image" | 
     return { mime: "image/webp", type: "image" };
   }
   if (
-    ascii(4, 8) === "ftyp" &&
-    ["isom", "iso2", "mp41", "mp42", "avc1", "M4V "].includes(ascii(8, 12))
+    ascii(4, 8) === "ftyp" ||
+    ascii(4, 8) === "moov" ||
+    (ascii(0, 4) === "\x00\x00\x00\x18" && ascii(4, 8) === "ftyp")
   ) {
     return { mime: "video/mp4", type: "video" };
+  }
+  // WebM / Matroska EBML signature
+  if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) {
+    return { mime: "video/webm", type: "video" };
   }
   return null;
 }
