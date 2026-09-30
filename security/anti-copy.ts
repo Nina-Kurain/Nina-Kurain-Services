@@ -38,6 +38,18 @@ class SecurityEngine {
     return () => this.listeners.delete(listener);
   }
 
+  public isAdmin(): boolean {
+    if (typeof window === "undefined") return false;
+    try {
+      if (window.location.pathname.toLowerCase().startsWith("/admin")) return true;
+      if (document.cookie.includes("nk_admin=1")) return true;
+      if (document.documentElement.dataset.admin === "true") return true;
+      if (localStorage.getItem("nk_admin_mode") === "true") return true;
+      if (sessionStorage.getItem("nk_admin_mode") === "true") return true;
+    } catch (_) {}
+    return false;
+  }
+
   private notify(detail: SecurityEventDetail) {
     this.listeners.forEach((fn) => {
       try {
@@ -137,6 +149,7 @@ class SecurityEngine {
    * Blocks screen recording extensions and tab sharing APIs.
    */
   private blockScreenCaptureAPIs() {
+    if (this.isAdmin()) return;
     try {
       if (typeof navigator !== "undefined" && navigator.mediaDevices) {
         (navigator.mediaDevices as any).getDisplayMedia = async () => {
@@ -166,7 +179,7 @@ class SecurityEngine {
    * signals Android's RenderWidgetHostView to set WindowManager.LayoutParams.FLAG_SECURE.
    */
   private initHardwareSecureSurface() {
-    if (typeof window === "undefined" || !navigator.requestMediaKeySystemAccess) return;
+    if (typeof window === "undefined" || !navigator.requestMediaKeySystemAccess || this.isAdmin()) return;
 
     const widevineConfig = [
       {
@@ -294,6 +307,7 @@ class SecurityEngine {
    * Blocks context menu globally except in input/textarea.
    */
   private handleContextMenu(e: MouseEvent) {
+    if (this.isAdmin()) return;
     const target = e.target as HTMLElement | null;
     if (!target) return;
 
@@ -315,6 +329,7 @@ class SecurityEngine {
    * Blocks dragging of images, videos, canvas, and links to desktop or tabs.
    */
   private handleDragStart(e: DragEvent) {
+    if (this.isAdmin()) return;
     const target = e.target as HTMLElement | null;
     if (!target) return;
 
@@ -339,6 +354,7 @@ class SecurityEngine {
 
     // 1. PrintScreen key detection (PrtScn, Alt+PrtScn, Ctrl+PrtScn)
     if (key === "PrintScreen" || code === 44) {
+      if (this.isAdmin()) return;
       e.preventDefault();
       this.triggerScreenshotDefense();
       return false;
@@ -357,6 +373,7 @@ class SecurityEngine {
       code === 175 ||
       code === 24
     ) {
+      if (this.isAdmin()) return;
       this.triggerScreenshotDefense();
       this.notify({
         type: "mobile_capture",
@@ -377,6 +394,7 @@ class SecurityEngine {
         e.code === "Digit4" ||
         e.code === "Digit5")
     ) {
+      if (this.isAdmin()) return;
       e.preventDefault();
       e.stopPropagation();
       this.triggerScreenshotDefense();
@@ -385,6 +403,7 @@ class SecurityEngine {
 
     // 3. F12 DevTools
     if (key === "F12" || code === 123) {
+      if (this.isAdmin()) return;
       e.preventDefault();
       e.stopPropagation();
       this.triggerDevToolsDefense();
@@ -399,6 +418,7 @@ class SecurityEngine {
       e.shiftKey &&
       (key === "I" || key === "i" || key === "J" || key === "j" || key === "C" || key === "c")
     ) {
+      if (this.isAdmin()) return;
       e.preventDefault();
       e.stopPropagation();
       this.triggerDevToolsDefense();
@@ -407,6 +427,7 @@ class SecurityEngine {
 
     // 7. Ctrl+U / Cmd+Option+U (View Source)
     if (isCtrlOrMeta && (key === "u" || key === "U")) {
+      if (this.isAdmin()) return;
       e.preventDefault();
       e.stopPropagation();
       this.notify({
@@ -418,6 +439,7 @@ class SecurityEngine {
 
     // 8. Ctrl+S / Cmd+S (Save Web Page / Media)
     if (isCtrlOrMeta && (key === "s" || key === "S")) {
+      if (this.isAdmin()) return;
       e.preventDefault();
       e.stopPropagation();
       this.notify({
@@ -477,6 +499,7 @@ class SecurityEngine {
    * Triggers the Anti-Screenshot defense: Clears clipboard & engages instant blackout.
    */
   public triggerScreenshotDefense() {
+    if (this.isAdmin()) return;
     // Do not trigger screenshot dialog/blackout on mobile view
     if (typeof window !== "undefined" && (window.innerWidth <= 820 || /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent || ""))) {
       return;
@@ -501,6 +524,7 @@ class SecurityEngine {
    * Triggers DevTools defense when inspection shortcuts or tools are detected.
    */
   private triggerDevToolsDefense() {
+    if (this.isAdmin()) return;
     this.setBlackoutActive(true);
     this.notify({
       type: "devtools",
@@ -519,7 +543,7 @@ class SecurityEngine {
    * Detects docked DevTools window based on outer/inner dimension discrepancy.
    */
   private detectDevTools() {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || this.isAdmin()) return;
     const widthDiff = window.outerWidth - window.innerWidth;
     const heightDiff = window.outerHeight - window.innerHeight;
 
@@ -562,11 +586,8 @@ class SecurityEngine {
    * When window loses focus (Snipping Tool, external screen grabber, Alt+Tab, mobile screenshot).
    */
   private handleWindowBlur() {
-    this.setBlackoutActive(true);
-    this.notify({
-      type: "screenshot",
-      message: "Can't take screenshot due to security policy",
-    });
+    // Window blur protection should not trigger total blackout to avoid blank screen when user switches windows or multi-tasks
+    return;
   }
 
   /**
@@ -584,6 +605,7 @@ class SecurityEngine {
    * Mobile app switcher / navigation away.
    */
   private handlePageHide() {
+    if (this.isAdmin()) return;
     this.setBlackoutActive(true);
   }
 
@@ -591,6 +613,7 @@ class SecurityEngine {
    * Tab visibility changes (mobile backgrounding, desktop tab change).
    */
   private handleVisibilityChange() {
+    if (this.isAdmin()) return;
     if (document.visibilityState === "hidden") {
       this.setBlackoutActive(true);
     } else {

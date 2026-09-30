@@ -38,7 +38,20 @@ export function getPersonSchema() {
     name: NINA_ENTITY.name,
     jobTitle: NINA_ENTITY.jobTitle,
     url: NINA_ENTITY.url,
-    image: NINA_ENTITY.primaryImage,
+    image: getImageObjectSchema({
+      id: `${NINA_ENTITY.canonicalBase}/#primaryimage`,
+      url: NINA_ENTITY.primaryImage,
+      pageUrl: NINA_ENTITY.url,
+      name: `${NINA_ENTITY.name} — Official Portrait`,
+      caption: `${NINA_ENTITY.name}, Digital Creator`,
+      description: NINA_ENTITY.description,
+      width: NINA_ENTITY.primaryImageWidth,
+      height: NINA_ENTITY.primaryImageHeight,
+      creditText: NINA_ENTITY.name,
+      copyrightNotice: `© 2026 ${NINA_ENTITY.name}. All rights reserved.`,
+      license: `${NINA_ENTITY.canonicalBase}/terms-and-conditions`,
+      acquireLicensePage: `${NINA_ENTITY.canonicalBase}/contact`,
+    }),
     description: NINA_ENTITY.description,
     sameAs: [...NINA_ENTITY.sameAs],
   };
@@ -110,7 +123,7 @@ export function getImageObjectSchema(params: {
 
   const resolvedPageUrl =
     params.pageUrl ||
-    (params.id ? params.id.replace(/#image$/, "") : NINA_ENTITY.url);
+    (params.id ? params.id.replace(/#[^/]+$/, "").replace(/\/$/, "") : NINA_ENTITY.url);
 
   return {
     "@type": "ImageObject",

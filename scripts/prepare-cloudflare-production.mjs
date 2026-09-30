@@ -111,7 +111,18 @@ export async function prepareCloudflareProduction() {
     ENABLE_TEST_ACCOUNTS: process.env.ENABLE_TEST_ACCOUNTS ?? config.vars?.ENABLE_TEST_ACCOUNTS ?? "false",
     PAYMENT_MODE: process.env.PAYMENT_MODE || config.vars?.PAYMENT_MODE || "live",
     MAIL_FROM: process.env.MAIL_FROM || config.vars?.MAIL_FROM || "Nina Kurain Services <members@ninakurainservices.in>",
+    MAIL_API_KEY: process.env.MAIL_API_KEY || config.vars?.MAIL_API_KEY || "",
+    RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || config.vars?.RAZORPAY_KEY_ID || "",
+    RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || config.vars?.RAZORPAY_KEY_SECRET || "",
+    RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET || config.vars?.RAZORPAY_WEBHOOK_SECRET || "",
+    MEDIA_SIGNING_SECRET: process.env.MEDIA_SIGNING_SECRET || config.vars?.MEDIA_SIGNING_SECRET || "",
+    JWT_SECRET: process.env.JWT_SECRET || config.vars?.JWT_SECRET || "",
+    CRON_SECRET: process.env.CRON_SECRET || config.vars?.CRON_SECRET || "",
+    ADMIN_EMAIL: process.env.ADMIN_EMAIL || config.vars?.ADMIN_EMAIL || "",
+    ADMIN_PASSWORD_HASH: process.env.ADMIN_PASSWORD_HASH || config.vars?.ADMIN_PASSWORD_HASH || "",
     GOOGLE_DRIVE_CLIENT_ID: googleDriveClientId,
+    GOOGLE_DRIVE_CLIENT_SECRET: process.env.GOOGLE_DRIVE_CLIENT_SECRET || config.vars?.GOOGLE_DRIVE_CLIENT_SECRET || "",
+    GOOGLE_DRIVE_TOKEN_ENCRYPTION_KEY: process.env.GOOGLE_DRIVE_TOKEN_ENCRYPTION_KEY || config.vars?.GOOGLE_DRIVE_TOKEN_ENCRYPTION_KEY || "",
     PINTEREST_SITE_VERIFICATION: process.env.PINTEREST_SITE_VERIFICATION || config.vars?.PINTEREST_SITE_VERIFICATION || "",
     GOOGLE_ADSENSE_CLIENT: process.env.GOOGLE_ADSENSE_CLIENT || config.vars?.GOOGLE_ADSENSE_CLIENT || "",
   };
@@ -125,6 +136,9 @@ export async function prepareCloudflareProduction() {
   console.log(`- GOOGLE_DRIVE_CLIENT_ID: ${config.vars.GOOGLE_DRIVE_CLIENT_ID || "(not set)"}`);
   console.log(`- PINTEREST_SITE_VERIFICATION: ${config.vars.PINTEREST_SITE_VERIFICATION ? "configured" : "(not set)"}`);
 
+
+  console.log(`- Razorpay: ${config.vars.RAZORPAY_KEY_ID ? `${config.vars.PAYMENT_MODE} (${config.vars.RAZORPAY_KEY_ID.slice(0, 12)}...)` : "(not set)"}`);
+  console.log(`- Mail API: ${config.vars.MAIL_API_KEY ? "configured" : "(not set)"}`);
 
   if (!config.vars.GOOGLE_DRIVE_CLIENT_ID) {
     console.warn("⚠️  Warning: GOOGLE_DRIVE_CLIENT_ID was not found in environment or .env.production");

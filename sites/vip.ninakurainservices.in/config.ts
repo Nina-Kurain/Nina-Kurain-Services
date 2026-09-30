@@ -34,7 +34,19 @@ export const VIP_SITE_CONFIG = {
     adminGateExempt: true,
     screenshotProtection: true,
     tamperProofPayments: "Payments are permanent and never deleted upon account purge",
-    unverifiedPurgeHours: 24
+    unverifiedPurgeHours: 24,
+    appVersions: {
+      latest: "2.1.0",
+      requiredVersion: "2.1.0",
+      alwaysRequireLatest: true,
+      mandatoryUpdate: true,
+      memberAndroidApk: "/downloads/NinaKurain.apk",
+      adminAndroidApk: "/downloads/NinaKurainStudio.apk",
+      iosProfile: "/downloads/NinaKurain.mobileconfig",
+      iosIpa: "/downloads/NinaKurain.ipa",
+      adminIosProfile: "/downloads/NinaKurainStudio.mobileconfig",
+      adminIosIpa: "/downloads/NinaKurainStudio.ipa",
+    }
   }
 } as const;
 

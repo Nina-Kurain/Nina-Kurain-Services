@@ -115,6 +115,9 @@ export interface SlideItem {
   renderedUrl?: string;
   coverBlob?: Blob;
   coverUrl?: string;
+  isMediaLoading?: boolean;
+  isMediaReady?: boolean;
+  mediaError?: string;
 }
 
 export interface StudioProjectDraft {

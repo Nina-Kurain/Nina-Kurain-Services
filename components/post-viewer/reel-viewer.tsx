@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   Heart,
   MessageCircle,
@@ -16,6 +16,7 @@ import {
   ChevronUp,
   ChevronDown,
   ChevronLeft,
+  ChevronRight,
   BadgeCheck,
   Check,
   X,
@@ -40,8 +41,9 @@ const timeAgo = (value: number) => {
   return new Date(value).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 };
 
-interface ReelViewerProps {
+export interface ReelViewerProps {
   post: ContentPost;
+  posts?: ContentPost[];
   avatar?: string;
   creatorName?: string;
   likesEnabled: boolean;
@@ -49,6 +51,7 @@ interface ReelViewerProps {
   message: string;
   onClose: () => void;
   onToggle: (type: "save" | "like", p: ContentPost) => Promise<void>;
+  onNavigatePost?: (p: ContentPost) => void;
   admin?: boolean;
   onEdit?: () => void;
   onArchive?: () => Promise<void>;
@@ -58,6 +61,7 @@ interface ReelViewerProps {
 
 export function ReelViewer({
   post,
+  posts,
   avatar,
   creatorName = "Nina Kurain",
   likesEnabled,
@@ -65,32 +69,73 @@ export function ReelViewer({
   message,
   onClose,
   onToggle,
+  onNavigatePost,
   admin = false,
   onEdit,
   onArchive,
   onDelete,
   onRemoveComment,
 }: ReelViewerProps) {
+  // Filter for reel-eligible posts
+  const reelList = useMemo(() => {
+    if (posts && posts.length > 0) {
+      const onlyReels = posts.filter(
+        (p) => p.is_reel || p.media?.[0]?.mime.startsWith("video/")
+      );
+      return onlyReels.length > 0 ? onlyReels : [post];
+    }
+    return [post];
+  }, [posts, post]);
+
+  const [activeReelId, setActiveReelId] = useState(post.id);
+
+  // Sync if post prop changes externally
+  useEffect(() => {
+    setActiveReelId(post.id);
+  }, [post.id]);
+
+  const currentReel = useMemo(() => {
+    return reelList.find((p) => p.id === activeReelId) || post;
+  }, [reelList, activeReelId, post]);
+
+  const currentIndex = useMemo(() => {
+    return reelList.findIndex((p) => p.id === currentReel.id);
+  }, [reelList, currentReel.id]);
+
+  const hasNext = currentIndex >= 0 && currentIndex < reelList.length - 1;
+  const hasPrev = currentIndex > 0;
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(true);
   const [muted, setMuted] = useState(true);
   const [commentOpen, setCommentOpen] = useState(false);
-  const [commentCount, setCommentCount] = useState(post.comment_count ?? 0);
+  const [commentCount, setCommentCount] = useState(currentReel.comment_count ?? 0);
   const [captionExpanded, setCaptionExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showPlayIndicator, setShowPlayIndicator] = useState(false);
   const [copied, setCopied] = useState(false);
   const [heartPop, setHeartPop] = useState(false);
 
-  const mediaUrl = post.media?.[0]?.url;
+  const mediaUrl = currentReel.media?.[0]?.url;
   const isMobile = useMobileViewer();
 
-  // Browser back closes reel without full-page navigation
+  // Reset when reel changes
+  useEffect(() => {
+    setCommentCount(currentReel.comment_count ?? 0);
+    setCaptionExpanded(false);
+    setPlaying(true);
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [currentReel.id, currentReel.comment_count]);
+
+  // Browser back closes reel
   useEffect(() => {
     const previousUrl = window.location.href;
     const previousState = history.state;
     const url = new URL(window.location.href);
-    url.searchParams.set("reel", post.id);
+    url.searchParams.set("reel", currentReel.id);
     history.pushState({ reelViewer: true }, "", url.toString());
 
     const handler = () => {
@@ -103,7 +148,7 @@ export function ReelViewer({
         history.replaceState(previousState, "", previousUrl);
       }
     };
-  }, [post.id, onClose]);
+  }, [currentReel.id, onClose]);
 
   // Lock background scrolling while open
   useEffect(() => {
@@ -126,10 +171,89 @@ export function ReelViewer({
     const v = videoRef.current;
     if (!v) return;
     v.muted = muted;
-    v.play().catch(() => {
-      // autoplay handled by browser policy
-    });
-  }, [muted]);
+    v.play().catch(() => {});
+  }, [muted, currentReel.id]);
+
+  // Navigation handlers
+  const goToNextReel = useCallback(() => {
+    if (hasNext) {
+      const next = reelList[currentIndex + 1];
+      setActiveReelId(next.id);
+      onNavigatePost?.(next);
+    }
+  }, [hasNext, currentIndex, reelList, onNavigatePost]);
+
+  const goToPrevReel = useCallback(() => {
+    if (hasPrev) {
+      const prev = reelList[currentIndex - 1];
+      setActiveReelId(prev.id);
+      onNavigatePost?.(prev);
+    }
+  }, [hasPrev, currentIndex, reelList, onNavigatePost]);
+
+  // Touch swipe tracking for mobile
+  const touchStartYRef = useRef<number | null>(null);
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartYRef.current = e.touches[0].clientY;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartYRef.current === null) return;
+    const deltaY = touchStartYRef.current - e.changedTouches[0].clientY;
+    touchStartYRef.current = null;
+    if (Math.abs(deltaY) > 50) {
+      if (deltaY > 0 && hasNext) {
+        goToNextReel();
+      } else if (deltaY < 0 && hasPrev) {
+        goToPrevReel();
+      }
+    }
+  };
+
+  // Wheel navigation on desktop
+  const wheelLockRef = useRef(false);
+  const handleWheel = (e: React.WheelEvent) => {
+    if (Math.abs(e.deltaY) > 40) {
+      if (wheelLockRef.current) return;
+      wheelLockRef.current = true;
+      if (e.deltaY > 0 && hasNext) {
+        goToNextReel();
+      } else if (e.deltaY < 0 && hasPrev) {
+        goToPrevReel();
+      }
+      setTimeout(() => {
+        wheelLockRef.current = false;
+      }, 400);
+    }
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (
+        commentOpen ||
+        (e.target instanceof Element && e.target.closest("input,textarea,[contenteditable=true]"))
+      ) {
+        return;
+      }
+      if (e.key === "Escape") {
+        videoRef.current?.pause();
+        onClose();
+        return;
+      }
+      if ((e.key === "ArrowDown" || e.key === "j") && hasNext) {
+        e.preventDefault();
+        goToNextReel();
+        return;
+      }
+      if ((e.key === "ArrowUp" || e.key === "k") && hasPrev) {
+        e.preventDefault();
+        goToPrevReel();
+        return;
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [commentOpen, hasNext, hasPrev, goToNextReel, goToPrevReel, onClose]);
 
   function togglePlay() {
     const v = videoRef.current;
@@ -156,11 +280,11 @@ export function ReelViewer({
   async function handleLike() {
     setHeartPop(true);
     setTimeout(() => setHeartPop(false), 400);
-    await onToggle("like", post);
+    await onToggle("like", currentReel);
   }
 
   async function handleShare() {
-    const protectedUrl = `${window.location.origin}/profile?tab=reels&reel=${post.id}`;
+    const protectedUrl = `${window.location.origin}/profile?tab=reels&reel=${currentReel.id}`;
     if (navigator.clipboard) {
       await navigator.clipboard.writeText(protectedUrl);
       setCopied(true);
@@ -182,15 +306,17 @@ export function ReelViewer({
   }, [menuOpen]);
 
   const accessLabel =
-    post.access_mode === "free"
+    currentReel.access_mode === "free"
       ? "FREE"
-      : post.access_mode === "level"
-      ? `LEVEL ${post.minimum_level}+`
+      : currentReel.access_mode === "level"
+      ? `LEVEL ${currentReel.minimum_level}+`
       : "SELECTED";
 
-  const captionText = post.caption?.trim() || post.title?.trim() || "";
+  const captionText = currentReel.caption?.trim() || currentReel.title?.trim() || "";
 
-  // ─── Mobile Layout (Dedicated Full-Screen Vertical Viewer) ───
+  // ══════════════════════════════════════════════════════════
+  // MOBILE LAYOUT: Full-Screen Instagram Reel with Up/Down Flow
+  // ══════════════════════════════════════════════════════════
   if (isMobile) {
     return (
       <>
@@ -205,14 +331,19 @@ export function ReelViewer({
         >
           <DialogContent className="rv-mobile-screen" showCloseButton={false}>
             <DialogHeader className="sr-only">
-              <DialogTitle>{post.title || "Creator reel"}</DialogTitle>
+              <DialogTitle>{currentReel.title || "Creator reel"}</DialogTitle>
               <DialogDescription>
                 Full screen reel viewer and community discussion
               </DialogDescription>
             </DialogHeader>
 
-            {/* Tap-to-play Video Layer */}
-            <div className="rv-video-container" onClick={togglePlay}>
+            {/* Tap-to-play Video Layer with touch swipe */}
+            <div
+              className="rv-video-container"
+              onClick={togglePlay}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
               <ProtectedVideo
                 ref={videoRef}
                 className="rv-video-elem"
@@ -224,7 +355,7 @@ export function ReelViewer({
                 loop
                 muted={muted}
                 preload="auto"
-                aria-label={post.title}
+                aria-label={currentReel.title}
               />
               <PrivateMediaMark />
 
@@ -249,13 +380,18 @@ export function ReelViewer({
                 <ChevronLeft size={28} />
               </button>
 
-              <div className="rv-label-group">
-                <Clapperboard size={16} />
+              <div className="rv-reel-tag">
+                <Clapperboard size={15} />
                 <span>Reels</span>
+                {reelList.length > 1 && (
+                  <span className="rv-reel-counter">
+                    {currentIndex + 1}/{reelList.length}
+                  </span>
+                )}
               </div>
 
               {/* Overflow Menu */}
-              <div className="rv-admin-header-actions" style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
+              <div className="rv-admin-header-actions" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
                 {admin && onEdit && (
                   <button
                     type="button"
@@ -270,6 +406,7 @@ export function ReelViewer({
                     <span>Edit</span>
                   </button>
                 )}
+
                 <div className="rv-menu-wrap" ref={menuRef}>
                   <button
                     type="button"
@@ -280,77 +417,101 @@ export function ReelViewer({
                     <MoreHorizontal size={22} />
                   </button>
 
-                {menuOpen && (
-                  <div className="rv-menu-dropdown">
-                    {admin && onEdit && (
+                  {menuOpen && (
+                    <div className="rv-menu-dropdown">
+                      {admin && onEdit && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            videoRef.current?.pause();
+                            onEdit();
+                          }}
+                        >
+                          <Pencil size={15} /> Edit reel
+                        </button>
+                      )}
+                      {admin && onArchive && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => {
+                            setMenuOpen(false);
+                            void onArchive();
+                          }}
+                        >
+                          <Archive size={15} /> Archive
+                        </button>
+                      )}
+                      {admin && onDelete && (
+                        <button
+                          type="button"
+                          className="rv-danger"
+                          disabled={busy}
+                          onClick={() => {
+                            setMenuOpen(false);
+                            onDelete();
+                          }}
+                        >
+                          <Trash2 size={15} /> Delete
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => {
                           setMenuOpen(false);
-                          videoRef.current?.pause();
-                          onEdit();
+                          void handleShare();
                         }}
                       >
-                        <Pencil size={15} /> Edit reel
+                        {copied ? <Check size={15} /> : <Share2 size={15} />}
+                        {copied ? "Link copied" : "Share link"}
                       </button>
-                    )}
-                    {admin && onArchive && (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => {
-                          setMenuOpen(false);
-                          void onArchive();
-                        }}
-                      >
-                        <Archive size={15} /> Archive
-                      </button>
-                    )}
-                    {admin && onDelete && (
-                      <button
-                        type="button"
-                        className="rv-danger"
-                        disabled={busy}
-                        onClick={() => {
-                          setMenuOpen(false);
-                          onDelete();
-                        }}
-                      >
-                        <Trash2 size={15} /> Delete
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        void handleShare();
-                      }}
-                    >
-                      {copied ? <Check size={15} /> : <Share2 size={15} />}
-                      {copied ? "Link copied" : "Share link"}
-                    </button>
-                  </div>
-                )}
+                    </div>
+                  )}
                 </div>
               </div>
             </header>
 
             {/* Right-Side Action Stack */}
             <div className="rv-right-actions">
+              {/* Stepper Up/Down to Next/Prev Reel */}
+              {reelList.length > 1 && (
+                <div className="rv-mobile-stepper">
+                  <button
+                    type="button"
+                    className="rv-stepper-btn"
+                    disabled={!hasPrev}
+                    onClick={goToPrevReel}
+                    aria-label="Previous reel"
+                  >
+                    <ChevronUp size={22} />
+                  </button>
+                  <button
+                    type="button"
+                    className="rv-stepper-btn"
+                    disabled={!hasNext}
+                    onClick={goToNextReel}
+                    aria-label="Next reel"
+                  >
+                    <ChevronDown size={22} />
+                  </button>
+                </div>
+              )}
+
               {likesEnabled && (
                 <button
                   type="button"
                   disabled={busy}
                   onClick={handleLike}
                   className={`rv-side-btn ${heartPop ? "rv-heart-pop" : ""}`}
-                  aria-label={post.liked ? "Unlike reel" : "Like reel"}
+                  aria-label={currentReel.liked ? "Unlike reel" : "Like reel"}
                 >
                   <Heart
                     size={28}
-                    fill={post.liked ? "currentColor" : "none"}
-                    className={post.liked ? "rv-liked" : ""}
+                    fill={currentReel.liked ? "currentColor" : "none"}
+                    className={currentReel.liked ? "rv-liked" : ""}
                   />
-                  <span>{post.like_count ?? 0}</span>
+                  <span>{currentReel.like_count ?? 0}</span>
                 </button>
               )}
 
@@ -367,11 +528,11 @@ export function ReelViewer({
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => void onToggle("save", post)}
+                onClick={() => void onToggle("save", currentReel)}
                 className="rv-side-btn"
-                aria-label={post.saved ? "Unsave reel" : "Save reel"}
+                aria-label={currentReel.saved ? "Unsave reel" : "Save reel"}
               >
-                <Bookmark size={28} fill={post.saved ? "currentColor" : "none"} />
+                <Bookmark size={28} fill={currentReel.saved ? "currentColor" : "none"} />
               </button>
 
               <button
@@ -435,7 +596,7 @@ export function ReelViewer({
                 </div>
               )}
 
-              <time className="rv-time-stamp">{timeAgo(post.published_at)}</time>
+              <time className="rv-time-stamp">{timeAgo(currentReel.published_at)}</time>
             </div>
 
             {message && <div className="rv-message-banner" role="status">{message}</div>}
@@ -444,7 +605,7 @@ export function ReelViewer({
         </Dialog>
 
         <CommentSheet
-          postId={post.id}
+          postId={currentReel.id}
           open={commentOpen}
           onOpenChange={setCommentOpen}
           admin={admin}
@@ -455,9 +616,36 @@ export function ReelViewer({
     );
   }
 
-  // ─── Desktop Layout (2-Column Reel Experience) ───
+  // ══════════════════════════════════════════════════════════
+  // DESKTOP LAYOUT: 2-Column Dialog + Seamless Next/Prev Flow
+  // ══════════════════════════════════════════════════════════
   return (
     <>
+      {/* Floating Outside Next / Previous Reel Buttons */}
+      {hasPrev && (
+        <button
+          type="button"
+          className="pv-desktop-post-nav pv-desktop-prev"
+          aria-label="Previous reel (Up arrow or k)"
+          title="Previous reel (Up arrow or k)"
+          onClick={goToPrevReel}
+        >
+          <ChevronLeft size={32} />
+        </button>
+      )}
+
+      {hasNext && (
+        <button
+          type="button"
+          className="pv-desktop-post-nav pv-desktop-next"
+          aria-label="Next reel (Down arrow or j)"
+          title="Next reel (Down arrow or j)"
+          onClick={goToNextReel}
+        >
+          <ChevronRight size={32} />
+        </button>
+      )}
+
       <Dialog
         open
         onOpenChange={(open) => {
@@ -469,12 +657,12 @@ export function ReelViewer({
       >
         <DialogContent className="rv-desktop-dialog" showCloseButton={false}>
           <DialogHeader className="sr-only">
-            <DialogTitle>{post.title || "Creator reel"}</DialogTitle>
+            <DialogTitle>{currentReel.title || "Creator reel"}</DialogTitle>
             <DialogDescription>Creator reel and discussion</DialogDescription>
           </DialogHeader>
 
           {/* Left: Video Column */}
-          <div className="rv-desk-video-col" onClick={togglePlay}>
+          <div className="rv-desk-video-col" onClick={togglePlay} onWheel={handleWheel}>
             <ProtectedVideo
               ref={videoRef}
               className="rv-video-elem"
@@ -486,7 +674,7 @@ export function ReelViewer({
               loop
               muted={muted}
               preload="auto"
-              aria-label={post.title}
+              aria-label={currentReel.title}
             />
             <PrivateMediaMark />
 
@@ -522,6 +710,33 @@ export function ReelViewer({
                 <span className="rv-access-pill">{accessLabel}</span>
               </div>
 
+              {/* Reel Counter Badge */}
+              {reelList.length > 1 && (
+                <div className="pv-post-counter-badge">
+                  <span>
+                    {currentIndex + 1}/{reelList.length}
+                  </span>
+                  <button
+                    type="button"
+                    className="pv-post-counter-nav-btn"
+                    disabled={!hasPrev}
+                    onClick={goToPrevReel}
+                    title="Previous reel (Up arrow or k)"
+                  >
+                    <ChevronUp size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    className="pv-post-counter-nav-btn"
+                    disabled={!hasNext}
+                    onClick={goToNextReel}
+                    title="Next reel (Down arrow or j)"
+                  >
+                    <ChevronDown size={13} />
+                  </button>
+                </div>
+              )}
+
               {admin && (
                 <div className="rv-admin-header-actions" style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
                   {onEdit && (
@@ -547,47 +762,47 @@ export function ReelViewer({
                     >
                       <MoreHorizontal size={18} />
                     </button>
-                  {menuOpen && (
-                    <div className="rv-menu-dropdown">
-                      {onEdit && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMenuOpen(false);
-                            videoRef.current?.pause();
-                            onEdit();
-                          }}
-                        >
-                          <Pencil size={14} /> Edit
-                        </button>
-                      )}
-                      {onArchive && (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => {
-                            setMenuOpen(false);
-                            void onArchive();
-                          }}
-                        >
-                          <Archive size={14} /> Archive
-                        </button>
-                      )}
-                      {onDelete && (
-                        <button
-                          type="button"
-                          className="rv-danger"
-                          disabled={busy}
-                          onClick={() => {
-                            setMenuOpen(false);
-                            onDelete();
-                          }}
-                        >
-                          <Trash2 size={14} /> Delete
-                        </button>
-                      )}
-                    </div>
-                  )}
+                    {menuOpen && (
+                      <div className="rv-menu-dropdown">
+                        {onEdit && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMenuOpen(false);
+                              videoRef.current?.pause();
+                              onEdit();
+                            }}
+                          >
+                            <Pencil size={14} /> Edit
+                          </button>
+                        )}
+                        {onArchive && (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => {
+                              setMenuOpen(false);
+                              void onArchive();
+                            }}
+                          >
+                            <Archive size={14} /> Archive
+                          </button>
+                        )}
+                        {onDelete && (
+                          <button
+                            type="button"
+                            className="rv-danger"
+                            disabled={busy}
+                            onClick={() => {
+                              setMenuOpen(false);
+                              onDelete();
+                            }}
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -605,66 +820,70 @@ export function ReelViewer({
               </button>
             </div>
 
+            {/* Caption Block */}
             {captionText && (
               <div className="rv-desk-caption-block">
                 <strong>{creatorName}</strong> {captionText}
               </div>
             )}
 
+            {/* Scrollable Comments Thread */}
             <div className="rv-desk-comments-scroll">
               <CommentThread
-                postId={post.id}
+                key={currentReel.id}
+                postId={currentReel.id}
                 admin={admin}
                 onRemove={onRemoveComment}
                 onCountChange={setCommentCount}
               />
             </div>
 
+            {/* Sidebar Footer with Action Row */}
             <div className="rv-desk-footer">
-              <div className="rv-desk-action-bar">
-                <div className="rv-desk-action-group">
+              <div className="rv-action-bar">
+                <div className="rv-action-group">
                   {likesEnabled && (
                     <button
                       type="button"
                       disabled={busy}
-                      aria-label={post.liked ? "Unlike" : "Like"}
+                      aria-label={currentReel.liked ? "Unlike" : "Like"}
                       onClick={handleLike}
-                      className="rv-desk-action-btn"
+                      className="rv-action-icon-btn"
                     >
                       <Heart
                         size={24}
-                        fill={post.liked ? "currentColor" : "none"}
-                        className={post.liked ? "rv-liked" : ""}
+                        fill={currentReel.liked ? "currentColor" : "none"}
+                        className={currentReel.liked ? "rv-liked" : ""}
                       />
                     </button>
                   )}
                   <button
                     type="button"
-                    aria-label="Share reel"
-                    className="rv-desk-action-btn"
+                    aria-label="Share reel link"
+                    className="rv-action-icon-btn"
                     onClick={() => void handleShare()}
                   >
-                    {copied ? <Check size={22} className="rv-copied" /> : <Share2 size={22} />}
+                    {copied ? <Check size={22} className="rv-copied-check" /> : <Share2 size={22} />}
                   </button>
                 </div>
 
                 <button
                   type="button"
                   disabled={busy}
-                  aria-label={post.saved ? "Unsave" : "Save"}
-                  className="rv-desk-action-btn"
-                  onClick={() => void onToggle("save", post)}
+                  aria-label={currentReel.saved ? "Unsave" : "Save"}
+                  className="rv-action-icon-btn"
+                  onClick={() => void onToggle("save", currentReel)}
                 >
-                  <Bookmark size={24} fill={post.saved ? "currentColor" : "none"} />
+                  <Bookmark size={24} fill={currentReel.saved ? "currentColor" : "none"} />
                 </button>
               </div>
 
               <div className="rv-desk-meta-line">
-                <strong>{post.like_count ?? 0} likes</strong>
+                <strong>{currentReel.like_count ?? 0} likes</strong>
                 <span>·</span>
                 <span>{commentCount} comments</span>
                 <span>·</span>
-                <time>{timeAgo(post.published_at)}</time>
+                <time>{timeAgo(currentReel.published_at)}</time>
               </div>
             </div>
           </div>
@@ -673,4 +892,3 @@ export function ReelViewer({
     </>
   );
 }
-

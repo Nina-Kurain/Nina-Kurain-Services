@@ -5,7 +5,8 @@ import { useCallback,useEffect,useRef,useState,type ReactNode,type MouseEvent,ty
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription } from "@/components/ui/dialog";
-import { Heart,Bookmark,MessageCircle,ArrowRight,Check,Loader2,Bell,Grid3X3,Clapperboard,Send,Trash2,Pin,CornerUpLeft,BadgeCheck,ChevronDown,ChevronLeft,ChevronRight,MessageSquareText,Star,Sparkles,Globe2,LogOut,Lock } from "lucide-react";
+import { HeaderNavDropdown } from "@/components/header-nav-dropdown";
+import { Heart,Bookmark,MessageCircle,ArrowRight,Check,Loader2,Bell,Grid3X3,Clapperboard,Send,Trash2,Pin,CornerUpLeft,BadgeCheck,ChevronDown,ChevronLeft,ChevronRight,MessageSquareText,Star,Sparkles,Globe2,LogOut,Lock,Settings,ShieldCheck } from "lucide-react";
 import { PostViewer } from "@/components/post-viewer/post-viewer";
 import { ReelViewer } from "@/components/post-viewer/reel-viewer";
 import type { Plan,ContentPost,Entitlement } from "@/lib/server/entitlements";
@@ -15,7 +16,34 @@ import { PrivateMediaMark,ProtectedImage,ProtectedVideo } from "@/components/pro
 import { getPlanPricing } from "@/lib/pricing";
 import { AdSlot, type AdConfig } from "@/components/ads/ad-slot";
 import { MemberReferralCard } from "@/components/referrals/member-referral-card";
-export async function api(path:string,data?:unknown,signal?:AbortSignal){const r=await fetch(path,data===undefined?{cache:"no-store",signal:signal??AbortSignal.timeout(20000)}:{signal:signal??AbortSignal.timeout(20000),method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});let result:any;try{result=await r.json();}catch{throw new Error("The server could not respond. Please retry.");}if(!r.ok)throw new Error(result.message??"Request failed");if(data!==undefined&&typeof window!=="undefined"){dispatchEvent(new Event("afterglow:update"));try{const channel=new BroadcastChannel("afterglow-live");channel.postMessage("update");channel.close();}catch{}}return result;}
+export async function api(path:string,data?:unknown,signal?:AbortSignal){
+  const headers: Record<string, string> = {};
+  if (typeof window !== "undefined") {
+    try {
+      const token = localStorage.getItem("nk_jwt_token");
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+    } catch (_) {}
+  }
+  if (data !== undefined) {
+    headers["Content-Type"] = "application/json";
+  }
+  const r = await fetch(path, data === undefined ? { cache: "no-store", signal: signal ?? AbortSignal.timeout(20000), headers } : { signal: signal ?? AbortSignal.timeout(20000), method: "POST", headers, body: JSON.stringify(data) });
+  let result: any;
+  try { result = await r.json(); } catch { throw new Error("The server could not respond. Please retry."); }
+  if (result?.token && typeof window !== "undefined") {
+    try { localStorage.setItem("nk_jwt_token", result.token); } catch (_) {}
+  }
+  if (!r.ok) throw new Error(result.message ?? "Request failed");
+  if (data !== undefined && typeof window !== "undefined") {
+    dispatchEvent(new Event("afterglow:update"));
+    try {
+      const channel = new BroadcastChannel("afterglow-live");
+      channel.postMessage("update");
+      channel.close();
+    } catch {}
+  }
+  return result;
+}
 export function useData<T=any>(path:string,interval=6000,initial:T|null=null){
   const [state,setState]=useState({path,data:initial,error:"",loading:!initial});
   const activePath=useRef(path),sequence=useRef(0),request=useRef<AbortController|null>(null);
@@ -37,8 +65,58 @@ export function useData<T=any>(path:string,interval=6000,initial:T|null=null){
 }
 export function State({loading,error,retry}:{loading:boolean;error:string;retry:()=>void}){return <div className="live-state" role={error?"alert":"status"}>{loading?<><Loader2 className="spin"/>Loading…</>:<><p>{error||"Nothing here yet."}</p>{error&&<Button variant="outline" onClick={retry}>Try again</Button>}</>}</div>;}
 export function Notice({children}:{children:ReactNode}){return <div className="live-message" role="status">{children}</div>;}
-export function Logout({admin=false,className="",label}:{admin?:boolean;className?:string;label?:string}){const [busy,setBusy]=useState(false),[error,setError]=useState("");const handleLogout=async()=>{if(busy)return;setBusy(true);setError("");try{await api(`/api/auth/${admin?"admin-logout":"logout"}`,{});location.assign(admin?"/admin/login":"/");}catch(e){location.assign(`/api/auth/${admin?"admin-logout":"logout"}`);}finally{setBusy(false);}};return <button type="button" className={`app-logout-btn ${className}`} onClick={handleLogout} disabled={busy} aria-label={admin?"Log out of Studio":"Log out"} title="Log out"><LogOut size={14}/><span>{busy?"…":label||"Log out"}</span>{error&&<span className="sr-only">{error}</span>}</button>;}
-export function MemberHeader({active="feed",label="MEMBER",onFeedNavigate}:{active?:string;label?:string;onFeedNavigate?:(event:MouseEvent<HTMLAnchorElement>,href:string)=>void}){const isAdmin=label.toUpperCase().includes("ADMIN")||label.toUpperCase().includes("CREATOR");return <header className="app-header live-header"><Link href="https://ninakurainservices.in" className="wordmark" aria-label="Nina Kurain Official Website" title="Nina Kurain Official Website"><BrandLogo height={48} width={72} priority/></Link><nav className="app-nav" aria-label="Member navigation"><Link href="/feed" onClick={ev=>onFeedNavigate?.(ev,"/feed")} className={active==="feed"?"active":""}>Feed</Link><Link href="/profile" onClick={ev=>onFeedNavigate?.(ev,"/profile")} className={active==="profile"?"active":""}>Profile</Link><Link href="/memberships" className={active==="membership"?"active":""}>Membership</Link><Link href="/account" className={active==="account"?"active":""}>Settings</Link>{isAdmin&&<Link href="/admin" className="admin-nav-link" style={{color:"#ff2d75",fontWeight:700}}>Creator studio</Link>}</nav><div className="header-actions"><ThemeQuickToggle/><span className="member-chip">{label}</span><Logout admin={isAdmin}/></div></header>;}
+export function Logout({admin=false,className="",label}:{admin?:boolean;className?:string;label?:string}){const [busy,setBusy]=useState(false),[error,setError]=useState("");const handleLogout=async()=>{if(busy)return;setBusy(true);setError("");try{localStorage.removeItem("nk_jwt_token");}catch(_){}if(admin){try{document.documentElement.dataset.admin="false";localStorage.removeItem("nk_admin_mode");document.cookie="nk_admin=; path=/; max-age=0; SameSite=Lax";}catch(_){}}try{await api(`/api/auth/${admin?"admin-logout":"logout"}`,{});location.assign(admin?"/admin/login":"/");}catch(e){location.assign(`/api/auth/${admin?"admin-logout":"logout"}`);}finally{setBusy(false);}};return <button type="button" className={`app-logout-btn ${className}`} onClick={handleLogout} disabled={busy} aria-label={admin?"Log out of Studio":"Log out"} title="Log out"><LogOut size={14}/><span>{busy?"…":label||"Log out"}</span>{error&&<span className="sr-only">{error}</span>}</button>;}
+export function MemberHeader({active="feed",label="MEMBER",onFeedNavigate}:{active?:string;label?:string;onFeedNavigate?:(event:MouseEvent<HTMLAnchorElement>,href:string)=>void}){
+  const isAdmin=label.toUpperCase().includes("ADMIN")||label.toUpperCase().includes("CREATOR");
+  useEffect(()=>{if(isAdmin){try{document.documentElement.dataset.admin="true";localStorage.setItem("nk_admin_mode","true");document.cookie="nk_admin=1; path=/; max-age=7776000; SameSite=Lax";}catch(_){}}},[isAdmin]);
+  return (
+    <header className="app-header live-header">
+      <Link href="https://ninakurainservices.in" className="wordmark" aria-label="Nina Kurain Official Website" title="Nina Kurain Official Website">
+        <BrandLogo height={48} width={72} priority/>
+      </Link>
+      <div className="header-nav-wrap">
+        <HeaderNavDropdown
+          align="start"
+          btnClassName="header-nav-dropdown-btn"
+          ariaLabel="Navigation menu"
+          label={
+            active === "feed" ? <><Grid3X3 size={15}/> Members Feed</> :
+            active === "saved" ? <><Bookmark size={15}/> Saved</> :
+            active === "membership" ? <><Sparkles size={15}/> Membership</> :
+            active === "account" ? <><Settings size={15}/> Settings</> :
+            <><Grid3X3 size={15}/> Navigate</>
+          }
+        >
+          <Link href="/feed" onClick={ev => onFeedNavigate?.(ev, "/feed")} className={active === "feed" ? "active" : ""}>
+            <Grid3X3 size={15}/> Members Feed
+          </Link>
+          <Link href="/saved" onClick={ev => onFeedNavigate?.(ev, "/saved")} className={active === "saved" ? "active" : ""}>
+            <Bookmark size={15}/> Saved Posts
+          </Link>
+          <Link href="/memberships" className={active === "membership" ? "active" : ""}>
+            <Sparkles size={15}/> Membership Plans
+          </Link>
+          <Link href="/account" className={active === "account" ? "active" : ""}>
+            <Settings size={15}/> Account Settings
+          </Link>
+          {isAdmin && (
+            <>
+              <div style={{ height: 1, background: "rgba(229, 107, 131, 0.2)", margin: "4px 0" }} />
+              <Link href="/admin" style={{ color: "#ff2d75", fontWeight: 700 }}>
+                <ShieldCheck size={15}/> Creator Studio
+              </Link>
+            </>
+          )}
+        </HeaderNavDropdown>
+      </div>
+      <div className="header-actions">
+        <ThemeQuickToggle/>
+        <span className="member-chip">{label}</span>
+        <Logout admin={isAdmin}/>
+      </div>
+    </header>
+  );
+}
 type Socials={instagram?:string;youtube?:string;facebook?:string;x?:string;website?:string};
 function CreatorSocials({links}:{links?:Socials}){const items=[{key:"instagram",label:"Instagram"},{key:"youtube",label:"YouTube"},{key:"facebook",label:"Facebook"},{key:"x",label:"X"},{key:"website",label:"Website"}] as const;const available=items.filter(item=>Boolean(links?.[item.key]));return available.length?<div className="creator-social-links" aria-label="Creator links">{available.map(({key,label})=><a key={key} href={links?.[key]} target="_blank" rel="noopener noreferrer" aria-label={`${label} — opens in a new tab`}><Globe2 size={16}/><span>{label}</span></a>)}</div>:null;}
 const money=(n:number)=>`₹${n.toLocaleString("en-IN")}`;
@@ -86,7 +164,7 @@ export function Feed({saved=false}:{saved?:boolean}){
   useEffect(()=>{const sync=()=>{setTab(tabFromLocation(location.pathname,location.search));setOffset(0);setSelected(null);setLockedPost(null);setMessage("");};sync();addEventListener("popstate",sync);return()=>removeEventListener("popstate",sync);},[]);
   useEffect(()=>{if(!data?.posts.length)return;const pid=new URLSearchParams(window.location.search).get("post");if(pid){const found=data.posts.find(p=>p.id===pid);if(found){if(found.is_locked)setLockedPost(found);else setSelected(found);}}},[data?.posts]);
   const e=data?.entitlement??profile?.entitlement,creator=data?.creator??profile?.creator;
-  function navigate(next:FeedTab,href=next==="saved"?"/saved":next==="reels"?"/profile?tab=reels":next==="exclusive"?"/profile?tab=exclusive":"/profile"){
+  function navigate(next:FeedTab,href=next==="saved"?"/saved":next==="reels"?"/feed?tab=reels":next==="exclusive"?"/feed?tab=exclusive":"/feed"){
     if(location.pathname+location.search!==href)history.pushState(null,"",href);
     setTab(next);setOffset(0);if(next!=="exclusive")setPlanLevel(0);setSelected(null);setLockedPost(null);setMessage("");
   }
@@ -101,11 +179,11 @@ export function Feed({saved=false}:{saved?:boolean}){
       if(type==="save")setMessage(next?"Saved to your collection.":"Removed from saved. Still available in its collection.");
     }catch(err){setMessage(err instanceof Error?err.message:"Unable to update this post.");}finally{pending.current=false;setBusy(false);}
   }
-  return <main className="app-page"><MemberHeader active={tab==="saved"?"saved":"profile"} onFeedNavigate={navigateHeader} label={e?.plan.name.toUpperCase()}/><div className="creator-profile"><StoriesRail/>
+  return <main className="app-page"><MemberHeader active={tab==="saved"?"saved":"feed"} onFeedNavigate={navigateHeader} label={e?.plan.name.toUpperCase()}/><div className="creator-profile"><StoriesRail/>
     <section className="creator-profile-head"><div className="creator-profile-top"><div className="creator-avatar"><img src={creator?.avatar||"/nina-gallery/nina-kurain-01.jpeg"} alt={creator?.name??"Creator"}/></div><div className="creator-profile-info"><div className="creator-profile-title"><div><span className="section-kicker">CREATOR PROFILE</span><h1>{creator?.name??"Nina Kurain"}</h1><p className="creator-handle">@{(creator?.name??"ninakurain").toLowerCase().replace(/[^a-z0-9]+/g,"")}</p></div><div className="creator-profile-actions"><Link className="profile-action primary" href="/memberships">{e?.level===0?"VIEW MEMBERSHIPS":"MANAGE MEMBERSHIP"}</Link><Link className="profile-action" href="/account">Edit profile</Link></div></div><div className="creator-stats"><span><b>{data?.posts.length??0}</b> posts</span><span><b>{e?.plan.name??"Free"}</b> access</span><span><b>{e?.plan?.name??"Private"}</b> community</span></div><p className="creator-bio">{creator?.bio??"A private collection of photographs, films and personal notes."}</p><div className="profile-links"><span>Private archive</span><span>New drops monthly</span></div><CreatorSocials links={creator?.socials}/></div></div></section>
     <AdSlot placement="banner" adsConfig={data?.ads} userLevel={e?.level ?? 0} />
     {e?.status==="grace_period"&&<Notice>PAYMENT PENDING · Access continues until {date(e.subscription?.grace_ends_at??null)}. <Link href="/account/membership">Renew now</Link></Notice>}{e?.status==="expired"&&<Notice>Your paid membership has expired. Your free access remains. <Link href="/memberships">View memberships</Link></Notice>}{message&&<Notice>{message}</Notice>}
-    <div className="profile-tabs" role="tablist" aria-label="Creator content">{(["demo","exclusive","reels"] as const).map((name,index)=><button type="button" key={name} id={`tab-${name}`} aria-controls="creator-content" className={tab===name?"active":""} onClick={()=>navigate(name)} onKeyDown={ev=>{const tabs=["demo","exclusive","reels"] as const;let target:number|undefined;if(ev.key==="ArrowRight")target=(index+1)%tabs.length;if(ev.key==="ArrowLeft")target=(index+tabs.length-1)%tabs.length;if(ev.key==="Home")target=0;if(ev.key==="End")target=tabs.length-1;if(target!==undefined){ev.preventDefault();navigate(tabs[target]);document.getElementById(`tab-${tabs[target]}`)?.focus();}}} role="tab" tabIndex={tab===name?0:-1} aria-selected={tab===name}>{name==="demo"?<Grid3X3 size={17}/>:name==="exclusive"?<Sparkles size={17}/>:<Clapperboard size={17}/>} {name==="demo"?"FEED":name.toUpperCase()}</button>)}</div>
+    <div className="profile-tabs" role="tablist" aria-label="Creator content">{(["demo","exclusive","reels","saved"] as const).map((name,index)=><button type="button" key={name} id={`tab-${name}`} aria-controls="creator-content" className={tab===name?"active":""} onClick={()=>navigate(name)} onKeyDown={ev=>{const tabs=["demo","exclusive","reels","saved"] as const;let target:number|undefined;if(ev.key==="ArrowRight")target=(index+1)%tabs.length;if(ev.key==="ArrowLeft")target=(index+tabs.length-1)%tabs.length;if(ev.key==="Home")target=0;if(ev.key==="End")target=tabs.length-1;if(target!==undefined){ev.preventDefault();navigate(tabs[target]);document.getElementById(`tab-${tabs[target]}`)?.focus();}}} role="tab" tabIndex={tab===name?0:-1} aria-selected={tab===name}>{name==="demo"?<Grid3X3 size={17}/>:name==="exclusive"?<Sparkles size={17}/>:name==="reels"?<Clapperboard size={17}/>:<Bookmark size={17}/>} {name==="demo"?"FEED":name==="saved"?"SAVED":name.toUpperCase()}</button>)}</div>
     {tab==="exclusive"&&<div className="exclusive-filter"><label><span>Exclusive access</span><select value={planLevel} onChange={event=>{setPlanLevel(Number(event.target.value));setOffset(0);}}><option value={0}>All exclusive drops</option>{data?.plans.filter(plan=>plan.level>0).map(plan=><option value={plan.level} key={plan.id}>{plan.name} {Boolean(e?.level&&e.level>=plan.level)?"(Unlocked)":"(Locked)"}</option>)}</select></label>{e?.level===0&&<Link href="/memberships">Unlock private archive <ArrowRight size={15}/></Link>}</div>}
     <section id="creator-content" role="tabpanel" aria-labelledby={`tab-${tab}`} aria-busy={loading}>
     {!data?<State loading={loading} error={error} retry={refresh}/>:data.posts.length?<div className="creator-grid">{data.posts.map((p, pIdx)=>{
@@ -121,7 +199,7 @@ export function Feed({saved=false}:{saved?:boolean}){
           >
             <div>
               {p.media?.[0]?.mime.startsWith("video/")
-                ? <ProtectedVideo muted preload="metadata" src={p.media[0].url} className={isLocked?"locked-media-blur":undefined}/>
+                ? <ProtectedVideo muted playsInline preload="auto" src={p.media[0].url} className={isLocked?"locked-media-blur":undefined}/>
                 : <ProtectedImage src={p.media?.[0]?.url} alt={p.title} loading="lazy" decoding="async" className={isLocked?"locked-media-blur":undefined}/>
               }
               {isLocked ? (
@@ -154,7 +232,7 @@ export function Feed({saved=false}:{saved?:boolean}){
     })}</div>:<div className="live-empty"><h2>{tab==="saved"?"No accessible bookmarks yet.":tab==="exclusive"?"No exclusives in this view yet.":tab==="reels"?"No reels in this collection yet.":"New drops are on their way."}</h2><p>{tab==="saved"?"Save a post from your profile to return to it later.":"Check back soon for the next creator drop."}</p></div>}
     {data&&(offset>0||data.more)&&<div className="live-toolbar"><Button type="button" variant="outline" disabled={offset===0} onClick={()=>setOffset(Math.max(0,offset-12))}>Previous</Button><span>Page {offset/12+1}</span><Button type="button" variant="outline" disabled={!data.more} onClick={()=>setOffset(offset+12)}>Next</Button></div>}
     </section>
-    {selected&&(selected.is_reel?<ReelViewer post={selected} avatar={creator?.avatar} creatorName={creator?.name} busy={busy} message={message} likesEnabled={Boolean(data?.likesEnabled)} onClose={()=>{setSelected(null);void refresh();}} onToggle={toggle}/>:<PostViewer post={selected} avatar={creator?.avatar} creatorName={creator?.name} busy={busy} message={message} likesEnabled={Boolean(data?.likesEnabled)} onClose={()=>{setSelected(null);void refresh();}} onToggle={toggle}/>)}
+    {selected&&(selected.is_reel?<ReelViewer post={selected} posts={data?.posts} onNavigatePost={(next)=>{if(next.is_locked){setSelected(null);setLockedPost(next);}else{setSelected(next);}}} avatar={creator?.avatar} creatorName={creator?.name} busy={busy} message={message} likesEnabled={Boolean(data?.likesEnabled)} onClose={()=>{setSelected(null);void refresh();}} onToggle={toggle}/>:<PostViewer post={selected} posts={data?.posts} onNavigatePost={(next)=>{if(next.is_locked){setSelected(null);setLockedPost(next);}else{setSelected(next);}}} avatar={creator?.avatar} creatorName={creator?.name} busy={busy} message={message} likesEnabled={Boolean(data?.likesEnabled)} onClose={()=>{setSelected(null);void refresh();}} onToggle={toggle}/>)}
     {lockedPost&&(
       <Dialog open={Boolean(lockedPost)} onOpenChange={open=>{if(!open)setLockedPost(null);}}>
         <DialogContent className="locked-preview-dialog">

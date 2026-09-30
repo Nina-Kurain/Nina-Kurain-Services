@@ -4,6 +4,7 @@ import Link from "@/components/site-link";
 import Image from "next/image";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
+import { APP_VERSION_DISPLAY, CURRENT_REQUIRED_APP_VERSION } from "@/lib/app-version";
 import {
   Camera,
   Film,
@@ -18,6 +19,11 @@ import {
   Sliders,
   Layers,
   Award,
+  Smartphone,
+  Download,
+  Apple,
+  LockKeyhole,
+  Flame,
 } from "lucide-react";
 import {
   InstagramIcon,
@@ -28,6 +34,7 @@ import {
 import { useState } from "react";
 import { NINA_ENTITY } from "@/lib/seo/nina-entity";
 import { AutoHorizontalGallery } from "@/components/auto-horizontal-gallery";
+import { CinematicIntro, replayCinematicIntro } from "@/components/cinematic-intro";
 
 export interface PublicHomepageProps {
   signedIn?: boolean;
@@ -185,7 +192,7 @@ const FAQS = [
   },
   {
     q: "What is the difference between the public gallery and the VIP patron membership?",
-    a: "The public gallery showcases Nina's curated fine-art and editorial portfolio freely. The VIP patron membership provides exclusive access to uncompressed 4K master archives, intimate boudoir drops, private behind-the-scenes cinema clips, and direct creator updates.",
+    a: "The public gallery showcases Nina's curated fine-art and editorial portfolio freely. Membership provides exclusive access to high-quality photo and video archives, behind-the-scenes clips, and direct creator updates.",
   },
   {
     q: "How can brands and media outlets submit collaboration inquiries?",
@@ -210,10 +217,11 @@ export function PublicHomepage({
 
   const creatorName = settings?.name || NINA_ENTITY.name;
   const creatorTitle = settings?.title || NINA_ENTITY.jobTitle;
-  const creatorSubheading = settings?.subheading || "Visual Storyteller • Contemporary Photography & Direction";
+  const creatorSubheading = settings?.subheading || "Where light surrenders to shadow.";
   const creatorBio =
     settings?.bio ||
-    "Nina Kurain is an independent Digital Creator exploring the intersections of editorial portraiture, contemporary fashion styling, and cinematic motion.";
+    "Intimate fine-art portraiture, sculpted chiaroscuro, and unhurried visual cinema. Enter the definitive private archives and contemporary visual world of Nina Kurain.";
+  const heroImage = settings?.heroImage || "/nina-landing-hero.png";
 
   const instagramUrl = socials?.instagram || NINA_ENTITY.instagramUrl;
   const youtubeUrl = socials?.youtube || NINA_ENTITY.youtubeUrl;
@@ -221,239 +229,381 @@ export function PublicHomepage({
   const pinterestUrl = socials?.pinterest || NINA_ENTITY.pinterestUrl;
 
   return (
-    <div className="public-page-wrapper">
+    <div className="public-page-wrapper sensual-ambient-theme">
+      {/* Haute-Couture Cinematic Welcome Reveal */}
+      <CinematicIntro
+        autoPlay={true}
+        creatorName={creatorName}
+        creatorBio={creatorBio}
+        creatorSubheading={creatorSubheading}
+        heroImage={heroImage}
+      />
+
+      {/* Seductive Ambient Light Blooms (Mobile-First CSS GPU-accelerated) */}
+      <div className="seductive-ambient-glow orb-1" aria-hidden="true" />
+      <div className="seductive-ambient-glow orb-2" aria-hidden="true" />
+      <div className="seductive-ambient-glow orb-3" aria-hidden="true" />
       <PublicHeader />
 
       <main id="main-content">
         {/* =================================================================
-            1. HERO SECTION: Focused Entity Identity
+            1. SEDUCTIVE HAUTE-COUTURE HERO (Mobile-First Editorial)
             ================================================================= */}
-        <section className="creator-hero" aria-label={`${creatorName} Introduction`}>
-          <div className="creator-hero-copy">
-            <div className="creator-eyebrow">
-              <span className="eyebrow-line" />
-              <span>OFFICIAL CREATOR WEBSITE</span>
-            </div>
+        <section className="seductive-hero-container" aria-label={`${creatorName} Introduction`}>
+          <div className="seductive-hero-grid">
+            <div className="seductive-hero-content">
+              <div className="seductive-beacon">
+                <span className="seductive-beacon-dot" />
+                <span>PRIVATE ARCHIVES ONLINE · 2026 COLLECTION</span>
+              </div>
 
-            <h1>
-              {creatorName}
-              <em>{creatorTitle}</em>
-            </h1>
+              <h1 className="seductive-title">
+                {creatorName}
+                <em>{creatorSubheading}</em>
+              </h1>
 
-            <p className="creator-subtitle">
-              {creatorSubheading}
-            </p>
+              <p className="seductive-subtitle">
+                {creatorBio}
+              </p>
 
-            <p className="creator-bio-p">
-              {creatorBio}
-            </p>
+              <div className="seductive-cta-cluster">
+                <a
+                  href="https://vip.ninakurainservices.in/signup"
+                  className="seductive-btn-primary"
+                >
+                  <Sparkles size={16} />
+                  <span>Enter Private Sanctuary</span>
+                </a>
 
-            <div className="creator-hero-actions">
-              <Link href="/photos" className="btn-primary">
-                <Camera size={15} />
-                <span>View Photography</span>
-              </Link>
+                <Link
+                  href="/lookbook"
+                  className="seductive-btn-glass"
+                >
+                  <Camera size={15} />
+                  <span>Explore Lookbook</span>
+                </Link>
 
-              <Link href="/about" className="btn-secondary">
-                <User size={15} />
-                <span>About Nina Kurain</span>
-              </Link>
+                <button
+                  type="button"
+                  onClick={() => replayCinematicIntro()}
+                  className="seductive-btn-glass"
+                  title="Watch Introduction Presentation"
+                >
+                  <Play size={14} />
+                  <span>Watch Intro</span>
+                </button>
 
-              <Link href="/videos" className="btn-secondary">
-                <Film size={15} />
-                <span>Watch Videos</span>
-              </Link>
-            </div>
+                <a
+                  href="https://vip.ninakurainservices.in/login"
+                  className="seductive-link-discrete"
+                  title="Existing VIP Sign In"
+                >
+                  <LockKeyhole size={13} />
+                  <span>VIP Member Sign In</span>
+                </a>
+              </div>
 
-            <div className="creator-social-pills">
-              <span>Official Profiles:</span>
-              <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="social-pill">
-                <InstagramIcon size={13} />
-                <span>Instagram</span>
-              </a>
-              <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="social-pill">
-                <YoutubeIcon size={13} />
-                <span>YouTube</span>
-              </a>
-              <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="social-pill">
-                <FacebookIcon size={13} />
-                <span>Facebook</span>
-              </a>
-              <a href={pinterestUrl} target="_blank" rel="noopener noreferrer" className="social-pill">
-                <PinterestIcon size={13} />
-                <span>Pinterest</span>
-              </a>
-            </div>
-          </div>
-
-          <div className="creator-hero-media" aria-label={`${creatorName} Official Opening Portrait`}>
-            <div className="hero-portrait-frame">
-              <Image
-                src="/nina-landing-hero.png"
-                alt={`${creatorName} — Digital Creator Official Opening`}
-                width={720}
-                height={900}
-                priority
-                className="hero-portrait-img"
-              />
-              <div className="hero-portrait-overlay" />
-            </div>
-            <div className="hero-floating-badge badge-top">
-              <span className="badge-pulse-dot" />
-              <div className="badge-text">
-                <strong>OFFICIAL OPENING</strong>
-                <small>{creatorTitle.toUpperCase()} · 2026</small>
+              <div className="seductive-social-row">
+                <span className="seductive-social-label">Connect:</span>
+                <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="seductive-social-link">
+                  <InstagramIcon size={12} />
+                  <span>Instagram</span>
+                </a>
+                <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="seductive-social-link">
+                  <YoutubeIcon size={12} />
+                  <span>YouTube</span>
+                </a>
+                <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="seductive-social-link">
+                  <FacebookIcon size={12} />
+                  <span>Facebook</span>
+                </a>
+                <a href={pinterestUrl} target="_blank" rel="noopener noreferrer" className="seductive-social-link">
+                  <PinterestIcon size={12} />
+                  <span>Pinterest</span>
+                </a>
               </div>
             </div>
-            <div className="hero-floating-badge badge-bottom">
-              <Sparkles size={14} style={{ color: "var(--nk-rose-light)" }} />
-              <div className="badge-text">
-                <strong>AUTHENTIC CREATOR ARCHIVE</strong>
-                <small>NINAKURAINSERVICES.IN</small>
+
+            <div className="seductive-hero-media" aria-label={`${creatorName} Official Opening Portrait`}>
+              <div className="seductive-portrait-wrap">
+                <Image
+                  src="/nina-landing-hero.png"
+                  alt={`${creatorName} — Digital Creator Official Opening`}
+                  width={720}
+                  height={900}
+                  priority
+                />
+                <div className="seductive-portrait-fade" />
               </div>
             </div>
           </div>
         </section>
 
         {/* =================================================================
-            2. ABOUT NINA KURAIN PREVIEW
+            2. THE LOOKBOOK — VISUAL HAUTE-COUTURE SPREAD
             ================================================================= */}
-        <section className="public-section" id="about-preview">
+        <section className="editorial-lookbook-section" id="lookbook-suites">
           <div className="section-head">
             <div className="section-head-copy">
-              <span className="section-kicker">CREATOR FOCUS</span>
-              <h2>About Nina Kurain</h2>
+              <span className="section-kicker">CURATED ARCHIVAL LOOKBOOK</span>
+              <h2>Atmospheres of Desire</h2>
               <p>
-                Nina Kurain is a digital creator combining cinematic lighting, fine-art portraiture,
-                and contemporary visual storytelling.
+                Four signature visual studies defining Nina Kurain&apos;s aesthetic world: handloom textures, monochromatic portraiture, natural light, and everyday creative moments.
               </p>
             </div>
-            <Link href="/about" className="section-action-link">
-              <span>Read Full Profile</span>
+            <Link href="/lookbook" className="section-action-link">
+              <span>View Full Lookbook</span>
               <ArrowRight size={14} />
             </Link>
           </div>
 
-          <div className="about-preview-showcase">
-            <div className="about-preview-portrait">
-              <div className="about-portrait-card">
+          <div className="editorial-lookbook-grid">
+            <Link href="/photos?look=chiaroscuro-silk" className="editorial-lookbook-card">
+              <div className="editorial-card-bg">
                 <Image
-                  src="/nina-gallery/nina-kurain-30.jpeg"
-                  alt="Nina Kurain — Digital Creator Portrait Frame 30"
-                  width={600}
-                  height={750}
-                  className="about-portrait-img"
+                  src="/nina-gallery/nina-kurain-22.jpeg"
+                  alt="Nina Kurain — Chiaroscuro & Silk"
+                  width={480}
+                  height={640}
                   loading="lazy"
                 />
-                <div className="about-portrait-scrim" />
-                <div className="about-portrait-badge">
-                  <Sparkles size={13} style={{ color: "var(--nk-rose-light)", flexShrink: 0 }} />
-                  <div>
-                    <strong>Nina Kurain</strong>
-                    <span>Studio Archive · Frame 30</span>
-                  </div>
+              </div>
+              <div className="editorial-card-scrim" />
+              <div className="editorial-card-content">
+                <span className="editorial-card-num">Look 01</span>
+                <h3 className="editorial-card-title">Chiaroscuro &amp; Silk</h3>
+                <p className="editorial-card-desc">
+                  Traditional South Asian handlooms sculpted in solitary directional studio darkness.
+                </p>
+                <span className="editorial-card-cta">
+                  Explore 16 Frames <ArrowRight size={12} />
+                </span>
+              </div>
+            </Link>
+
+            <Link href="/photos?look=monochrome-reverie" className="editorial-lookbook-card">
+              <div className="editorial-card-bg">
+                <Image
+                  src="/nina-gallery/nina-kurain-21.jpeg"
+                  alt="Nina Kurain — Monochrome Reverie"
+                  width={480}
+                  height={640}
+                  loading="lazy"
+                />
+              </div>
+              <div className="editorial-card-scrim" />
+              <div className="editorial-card-content">
+                <span className="editorial-card-num">Look 02</span>
+                <h3 className="editorial-card-title">Monochrome Reverie</h3>
+                <p className="editorial-card-desc">
+                  High-contrast black-and-white studies exploring pure silhouette and tactile tension.
+                </p>
+                <span className="editorial-card-cta">
+                  Explore 12 Frames <ArrowRight size={12} />
+                </span>
+              </div>
+            </Link>
+
+            <Link href="/photos?look=boudoir-whisper" className="editorial-lookbook-card">
+              <div className="editorial-card-bg">
+                <Image
+                  src="/nina-gallery/nina-kurain-36.jpeg"
+                  alt="Nina Kurain — The Boudoir Whisper"
+                  width={480}
+                  height={640}
+                  loading="lazy"
+                />
+              </div>
+              <div className="editorial-card-scrim" />
+              <div className="editorial-card-content">
+                <span className="editorial-card-num">Look 03</span>
+                <h3 className="editorial-card-title">The Boudoir Whisper</h3>
+                <p className="editorial-card-desc">
+                  Sun-drenched natural illumination capturing organic skin glow and candid pauses.
+                </p>
+                <span className="editorial-card-cta">
+                  Explore 14 Frames <ArrowRight size={12} />
+                </span>
+              </div>
+            </Link>
+
+            <Link href="/photos?look=avant-garde-velvet" className="editorial-lookbook-card">
+              <div className="editorial-card-bg">
+                <Image
+                  src="/nina-gallery/nina-kurain-39.jpeg"
+                  alt="Nina Kurain — Avant-Garde Velvet"
+                  width={480}
+                  height={640}
+                  loading="lazy"
+                />
+              </div>
+              <div className="editorial-card-scrim" />
+              <div className="editorial-card-content">
+                <span className="editorial-card-num">Look 04</span>
+                <h3 className="editorial-card-title">Avant-Garde Velvet</h3>
+                <p className="editorial-card-desc">
+                  Modern tailored velvet meeting heritage drapes in high-fashion editorial styling.
+                </p>
+                <span className="editorial-card-cta">
+                  Explore 9 Frames <ArrowRight size={12} />
+                </span>
+              </div>
+            </Link>
+          </div>
+        </section>
+
+        {/* =================================================================
+            3. BEHIND CLOSED DOORS — THE PRIVATE SANCTUARY
+            ================================================================= */}
+        <section className="seductive-sanctuary-wrap" id="vip-hub">
+          <div className="section-head">
+            <div className="section-head-copy">
+              <span className="section-kicker">CONFIDENTIAL ACCESS</span>
+              <h2>Behind Closed Doors</h2>
+              <p>
+                Where the public exhibition ends, membership begins. An invitation to behind-the-scenes stories, new hangout drops, and direct creator updates.
+              </p>
+            </div>
+            <a
+              href="https://vip.ninakurainservices.in"
+              className="section-action-link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span>Explore VIP Portal</span>
+              <ArrowRight size={14} />
+            </a>
+          </div>
+
+          <div className="sanctuary-feature-card">
+            <div className="sanctuary-visual-pane">
+              <Image
+                src="/nina-gallery/nina-kurain-30.jpeg"
+                alt="Nina Kurain — Confidential Sanctuary Teaser"
+                width={700}
+                height={875}
+                loading="lazy"
+              />
+              <div className="sanctuary-visual-veil">
+                <div className="sanctuary-lock-beacon">
+                  <LockKeyhole size={28} />
+                </div>
+                <div className="sanctuary-veil-text">
+                  <strong>Behind Closed Doors</strong>
+                  <span>Confidential Sanctuary Archives</span>
                 </div>
               </div>
             </div>
 
-            <div className="about-preview-content">
-              <div className="about-statement-box">
-                <p className="about-quote">
-                  &ldquo;Every photograph is conceived as a visual narrative — disciplined in shadow, natural in tone, and unapologetically authentic in aesthetic direction.&rdquo;
-                </p>
-                <span className="about-byline">— Nina Kurain, Digital Creator</span>
+            <div className="sanctuary-content-pane">
+              <span className="sanctuary-kicker">MEMBERS-ONLY SANCTUARY</span>
+              <h2>Enter Nina&apos;s Private Circle</h2>
+              <p>
+                Verified members unlock high-resolution photography, behind-the-scenes cinema, creator notes, and private community updates delivered discreetly.
+              </p>
+
+              <div className="sanctuary-action-row">
+                <a
+                  href="https://vip.ninakurainservices.in/signup"
+                  className="seductive-btn-primary"
+                >
+                  <Sparkles size={16} />
+                  <span>Claim Complimentary VIP Pass</span>
+                </a>
+
+                <a
+                  href="https://vip.ninakurainservices.in/login"
+                  className="seductive-btn-glass"
+                >
+                  <LockKeyhole size={14} />
+                  <span>VIP Member Sign In</span>
+                </a>
               </div>
 
-              <div className="about-pillars-stack">
-                <article className="about-pillar-item">
-                  <div className="about-pillar-icon"><Camera size={20} /></div>
-                  <div>
-                    <h3>Editorial Photography</h3>
-                    <p>
-                      Meticulous studio illumination, natural skin tones, and texture depth captured across 51 archival frames.
-                    </p>
-                  </div>
-                </article>
-
-                <article className="about-pillar-item">
-                  <div className="about-pillar-icon"><Film size={20} /></div>
-                  <div>
-                    <h3>Visual Cinematography</h3>
-                    <p>
-                      Motion studies, reels, and visual essays focusing on movement, fabric flow, and atmospheric pacing.
-                    </p>
-                  </div>
-                </article>
-
-                <article className="about-pillar-item">
-                  <div className="about-pillar-icon"><Palette size={20} /></div>
-                  <div>
-                    <h3>Creative Direction</h3>
-                    <p>
-                      Bespoke styling concepts blending modern minimalism with classic ethnic elegance for editorial and brand features.
-                    </p>
-                  </div>
-                </article>
+              <div className="sanctuary-app-chips">
+                <span style={{ fontSize: "11px", color: "var(--nk-text-subtle)", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700 }}>
+                  Native App:
+                </span>
+                <a
+                  href="/downloads/NinaKurain.apk"
+                  download="NinaKurain.apk"
+                  className="sanctuary-app-chip"
+                  title="Download Member Android APK"
+                >
+                  <Smartphone size={13} style={{ color: "var(--nk-rose-light)" }} />
+                  <span>VIP Android APK ({APP_VERSION_DISPLAY})</span>
+                </a>
+                <a
+                  href="/downloads/NinaKurain.mobileconfig"
+                  download="NinaKurain.mobileconfig"
+                  className="sanctuary-app-chip"
+                  title="Install VIP iOS Profile"
+                >
+                  <Apple size={13} style={{ color: "var(--nk-rose-light)" }} />
+                  <span>iOS VIP Profile</span>
+                </a>
+                <a
+                  href="/downloads/NinaKurain.ipa"
+                  download="NinaKurain.ipa"
+                  className="sanctuary-app-chip"
+                  title="Download Member iOS IPA"
+                >
+                  <Download size={13} />
+                  <span>Member .IPA</span>
+                </a>
               </div>
             </div>
           </div>
         </section>
 
         {/* =================================================================
-            2B. STUDIO METHODOLOGY & OPTICAL ARCHITECTURE
+            4. THE ART OF ALLURE — EDITORIAL DOUBLE-SPREAD
             ================================================================= */}
-        <section className="public-section" id="methodology">
-          <div className="section-head">
-            <div className="section-head-copy">
-              <span className="section-kicker">OPTICAL PRECISION &amp; CRAFT</span>
-              <h2>Studio Methodology &amp; Visual Architecture</h2>
-              <p>
-                Behind every frame lies a disciplined commitment to high-transmission prime optics, controlled chiaroscuro illumination, and authentic human presence.
-              </p>
+        <section className="seductive-allure-wrap" id="methodology">
+          <div className="allure-editorial-split">
+            <div className="allure-quote-box">
+              <blockquote className="allure-quote-text">
+                &ldquo;Sensuality is not loud. It is the lingering silence between two breaths, the curve of a shadow across bare silk.&rdquo;
+              </blockquote>
+              <span className="allure-quote-author">— Nina Kurain, Digital Creator</span>
             </div>
-            <Link href="/creator-tips" className="section-action-link">
-              <span>Explore Studio Guide</span>
-              <ArrowRight size={14} />
-            </Link>
-          </div>
 
-          <div className="info-highlight-grid">
-            <article className="info-feature-card">
-              <div className="info-card-icon"><Camera size={22} /></div>
-              <h3>Prime Optical Separation</h3>
-              <p>
-                Captured primarily on 85mm f/1.4 and 50mm f/1.2 prime glass, ensuring microscopic fabric detail, gentle focus falloff, and true-to-life spatial compression.
-              </p>
-            </article>
+            <div className="allure-pillars-stack">
+              <article className="allure-pillar-item">
+                <span className="allure-pillar-num">01</span>
+                <div>
+                  <h3>Sculpted Chiaroscuro</h3>
+                  <p>
+                    Directional single-source studio illumination designed to caress collarbones, bare silhouettes, and microscopic silk textures.
+                  </p>
+                </div>
+              </article>
 
-            <article className="info-feature-card">
-              <div className="info-card-icon"><Sliders size={22} /></div>
-              <h3>Directional Chiaroscuro</h3>
-              <p>
-                Sculpted using single-point directional softboxes and obsidian negative fill flags, intentionally embracing deep shadows to reveal sculptural bone structure.
-              </p>
-            </article>
+              <article className="allure-pillar-item">
+                <span className="allure-pillar-num">02</span>
+                <div>
+                  <h3>Tactile Authenticity</h3>
+                  <p>
+                    100% authentic human photography. Uncompressed raw textures, natural skin tones, and rich South Asian handloom textiles with zero synthetic smoothing.
+                  </p>
+                </div>
+              </article>
 
-            <article className="info-feature-card">
-              <div className="info-card-icon"><Palette size={22} /></div>
-              <h3>Organic Filmic Grading</h3>
-              <p>
-                Custom color science calibrated specifically for warm South Asian skin tones, highlighting jewel-toned handloom weaves with antique copper and plum undertones.
-              </p>
-            </article>
-
-            <article className="info-feature-card">
-              <div className="info-card-icon"><Film size={22} /></div>
-              <h3>Kinetic Pacing &amp; Stillness</h3>
-              <p>
-                Motion studies shot at 4K 60fps honoring slow-cinema rhythm, fluid fabric drape, and subtle micro-expressions rather than frantic fast-paced cuts.
-              </p>
-            </article>
+              <article className="allure-pillar-item">
+                <span className="allure-pillar-num">03</span>
+                <div>
+                  <h3>Slow Sensory Cinema</h3>
+                  <p>
+                    Hypnotic 4K motion studies honoring breath, lingering movement, and unhurried visual sensuality without frantic modern distractions.
+                  </p>
+                </div>
+              </article>
+            </div>
           </div>
         </section>
 
         {/* =================================================================
-            3. FEATURED PHOTOGRAPHY (Auto Horizontal Scrolling Showcase)
+            5. CONTINUOUS PHOTOGRAPHIC ARCHIVE STREAM
             ================================================================= */}
         <section className="public-section" id="photography">
           <div className="section-head">
@@ -471,118 +621,6 @@ export function PublicHomepage({
           </div>
 
           <AutoHorizontalGallery photos={displayPhotos} />
-        </section>
-
-        {/* =================================================================
-            3B. CURATED VISUAL SUITES & THEMES
-            ================================================================= */}
-        <section className="public-section" id="suites">
-          <div className="section-head">
-            <div className="section-head-copy">
-              <span className="section-kicker">CURATED SERIES CATALOG</span>
-              <h2>Archival Themes &amp; Aesthetic Suites</h2>
-              <p>
-                An overview of the four signature creative motifs defining Nina Kurain&apos;s photographic archive.
-              </p>
-            </div>
-            <Link href="/lookbook" className="section-action-link">
-              <span>View Full Lookbook</span>
-              <ArrowRight size={14} />
-            </Link>
-          </div>
-
-          <div className="info-highlight-grid">
-            <Link href="/photos" className="info-feature-card" style={{ textDecoration: "none" }}>
-              <div className="info-card-icon"><Layers size={22} /></div>
-              <h3>I. Chiaroscuro Sarees</h3>
-              <p>
-                Traditional South Asian handlooms and Kanchipuram silks rendered in dramatic low-key studio lighting with deep obsidian backgrounds.
-              </p>
-              <span style={{ fontSize: "12px", color: "var(--nk-rose)", fontWeight: 700, marginTop: "auto", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                Explore 16 Frames <ArrowRight size={12} />
-              </span>
-            </Link>
-
-            <Link href="/photos" className="info-feature-card" style={{ textDecoration: "none" }}>
-              <div className="info-card-icon"><Sparkles size={22} /></div>
-              <h3>II. Minimalist Monochromes</h3>
-              <p>
-                High-contrast black-and-white studies focusing on pure silhouette, tactile cotton textures, and intimate emotional tension.
-              </p>
-              <span style={{ fontSize: "12px", color: "var(--nk-rose)", fontWeight: 700, marginTop: "auto", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                Explore 12 Frames <ArrowRight size={12} />
-              </span>
-            </Link>
-
-            <Link href="/photos" className="info-feature-card" style={{ textDecoration: "none" }}>
-              <div className="info-card-icon"><Camera size={22} /></div>
-              <h3>III. Golden Hour Ambient</h3>
-              <p>
-                Warm, sun-drenched natural illumination capturing organic skin glow, sheer organza fabrics, and effortless candid pauses.
-              </p>
-              <span style={{ fontSize: "12px", color: "var(--nk-rose)", fontWeight: 700, marginTop: "auto", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                Explore 14 Frames <ArrowRight size={12} />
-              </span>
-            </Link>
-
-            <Link href="/photos" className="info-feature-card" style={{ textDecoration: "none" }}>
-              <div className="info-card-icon"><Award size={22} /></div>
-              <h3>IV. Contemporary High-Fashion</h3>
-              <p>
-                Avant-garde ethnic fusions, tailored velvet blazers with heritage drapes, and modern editorial styling concepts.
-              </p>
-              <span style={{ fontSize: "12px", color: "var(--nk-rose)", fontWeight: 700, marginTop: "auto", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                Explore 9 Frames <ArrowRight size={12} />
-              </span>
-            </Link>
-          </div>
-        </section>
-
-        {/* =================================================================
-            4. VIDEOS & CINEMATOGRAPHY (Media-Free Motion Directory)
-            ================================================================= */}
-        <section className="public-section" id="videos">
-          <div className="section-head reveal-on-scroll">
-            <div className="section-head-copy">
-              <span className="section-kicker">MOTION &amp; CINEMA DIRECTORY</span>
-              <h2>Creator Videos &amp; Cinematography</h2>
-              <p>
-                Visual essays, studio cinematography vignettes, and motion series. View the complete visual cinema archive on the dedicated video hub or YouTube.
-              </p>
-            </div>
-            <Link href="/videos" className="section-action-link">
-              <span>Watch All Videos</span>
-              <ArrowRight size={14} />
-            </Link>
-          </div>
-
-          <div className="video-directory-grid">
-            {displayVideos.slice(0, 3).map((video) => (
-              <div key={video.id} className="video-directory-card">
-                <div className="video-directory-badge">
-                  <Film size={14} />
-                  <span>{video.meta}</span>
-                </div>
-                <h3>{video.title}</h3>
-                <p>{video.desc}</p>
-                <div className="video-directory-actions">
-                  <Link href="/videos" className="btn-secondary" style={{ fontSize: "12.5px", padding: "7px 16px" }}>
-                    <Play size={13} />
-                    <span>Watch Video</span>
-                  </Link>
-                  <a
-                    href={youtubeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="video-sub-link"
-                  >
-                    <YoutubeIcon size={13} />
-                    <span>YouTube</span>
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
         </section>
 
         {/* =================================================================
@@ -889,7 +927,7 @@ export function PublicHomepage({
         </section>
 
         {/* =================================================================
-            9. PATRON & MEMBERS ACCESS (Subtle Neutral Callout)
+            10. PATRON & MEMBERS ACCESS (Subtle Neutral Callout)
             ================================================================= */}
         <div className="vip-banner-wrap">
           <div className="vip-banner">

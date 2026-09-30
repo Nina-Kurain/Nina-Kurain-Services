@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Nina Studio</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.ninakurain.studio</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>NinaStudio</string>
+	<key>CFBundlePackageType</key>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>2.1.0</string>
+	<key>CFBundleVersion</key>
+	<string>3</string>
+	<key>CFBundleIcons</key>
+	<dict>
+		<key>CFBundlePrimaryIcon</key>
+		<dict>
+			<key>CFBundleIconFiles</key>
+			<array>
+				<string>AppIcon</string>
+			</array>
+			<key>CFBundleIconName</key>
+			<string>AppIcon</string>
+		</dict>
+	</dict>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- NETWORK SECURITY                                        -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<true/>
+		<key>NSAllowsArbitraryLoadsForMedia</key>
+		<true/>
+	</dict>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- CAMERA & MEDIA CAPTURE PERMISSIONS                      -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>NSCameraUsageDescription</key>
+	<string>Nina Studio needs camera access to capture high-definition creator photos and videos directly.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Nina Studio needs microphone access to record voiceovers and audio for videos and reels.</string>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- PHOTO LIBRARY PERMISSIONS                               -->
+	<!-- Required for: uploading posts, saving exports           -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Nina Studio needs access to your photo library to upload private posts, media bundles, and video reels.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Nina Studio needs permission to save created media exports and photos to your photo library.</string>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- MEDIA LIBRARY PERMISSION                                -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>NSAppleMusicUsageDescription</key>
+	<string>Nina Studio would like to access your media library for adding background music to video content.</string>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- FACE ID / BIOMETRIC AUTHENTICATION                      -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>Nina Studio uses Face ID for secure creator authentication and to protect studio management access.</string>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- LOCATION                                                -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Nina Studio may use your location to geo-tag content and personalize the creator experience.</string>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- CONTACTS                                                -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>NSContactsUsageDescription</key>
+	<string>Nina Studio may access your contacts for collaboration invites and member management.</string>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- LOCAL NETWORK (AirPlay, Casting)                        -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Nina Studio uses the local network for media casting, AirPlay streaming, and preview on external displays.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_airplay._tcp</string>
+	</array>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- FILE / DOCUMENT ACCESS                                  -->
+	<!-- Required for: media uploads, exports, batch operations  -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>UISupportsDocumentBrowser</key>
+	<true/>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- BACKGROUND MODES                                        -->
+	<!-- Required for: media playback, uploads, background fetch -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>fetch</string>
+		<string>processing</string>
+	</array>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- DEVICE CAPABILITIES & UI                                -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleLightContent</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- URL SCHEMES (deep linking)                              -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>ninakurainstudio</string>
+				<string>ninastudio</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>com.ninakurain.studio</string>
+		</dict>
+	</array>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- QUERIED URL SCHEMES                                     -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>instagram</string>
+		<string>instagram-stories</string>
+		<string>whatsapp</string>
+		<string>tg</string>
+		<string>twitter</string>
+		<string>fb</string>
+		<string>youtube</string>
+		<string>pinterest</string>
+		<string>mailto</string>
+		<string>tel</string>
+		<string>sms</string>
+		<string>itms-services</string>
+		<string>itms-apps</string>
+	</array>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- APP TRACKING TRANSPARENCY (iOS 14.5+)                  -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Nina Studio may use tracking to deliver personalized analytics and content insights for creators.</string>
+</dict>
+</plist>

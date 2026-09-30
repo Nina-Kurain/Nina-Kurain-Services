@@ -131,13 +131,36 @@ video::-internal-media-controls-cast-button {
 }
 
 /* 6. Instant Whole-Page Screenshot Blackout Engine (Mobile / Desktop / Snipping Tool / PrtScn) */
+/* ADMIN-ONLY EXEMPTION: Screenshots, screen recording, and inspection are allowed for admin */
+html[data-admin="true"].nk-screenshot-shield,
+html[data-admin="true"] .nk-screenshot-shield,
+html[data-admin="true"] body.nk-screenshot-shield,
+html[data-admin="true"] #nk-permanent-security-curtain,
+html[data-admin="true"] .nk-security-curtain,
+html[data-admin="true"] .nk-security-toast,
+html[data-admin="true"] #nk-android-system-toast {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+html[data-admin="true"].nk-screenshot-shield body,
+html[data-admin="true"].nk-screenshot-shield body > * {
+  filter: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  color: inherit !important;
+}
+
 html.nk-screenshot-shield,
 html.nk-screenshot-shield body {
   background: #000000 !important;
   color: transparent !important;
 }
 
-html.nk-screenshot-shield body > *:not(#nk-permanent-security-curtain):not(.nk-security-toast),
+html.nk-screenshot-shield body > *:not(#nk-permanent-security-curtain):not(.nk-security-toast):not(.cinematic-intro-stage),
 html.nk-screenshot-shield main,
 html.nk-screenshot-shield header,
 html.nk-screenshot-shield footer,
@@ -145,7 +168,7 @@ html.nk-screenshot-shield nav,
 html.nk-screenshot-shield section,
 html.nk-screenshot-shield article,
 html.nk-screenshot-shield aside:not(#nk-permanent-security-curtain),
-html.nk-screenshot-shield div:not(#nk-permanent-security-curtain):not(.nk-security-toast):not(.nk-curtain-card):not(.nk-curtain-icon),
+html.nk-screenshot-shield div:not(#nk-permanent-security-curtain):not(.nk-security-toast):not(.nk-curtain-card):not(.nk-curtain-icon):not(.cinematic-intro-stage):not(.cinematic-intro-stage *),
 html.nk-screenshot-shield p,
 html.nk-screenshot-shield h1,
 html.nk-screenshot-shield h2:not(.nk-curtain-title),

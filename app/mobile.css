@@ -1385,3 +1385,74 @@ a {
   }
 }
 
+/* ==========================================================================
+   19. Native Pull-To-Refresh Indicator
+   ========================================================================== */
+.nk-pull-to-refresh {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0;
+  z-index: 99998;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: calc(8px + env(safe-area-inset-top, 0px));
+}
+
+.nk-pull-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  background: rgba(18, 12, 17, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 133, 161, 0.28);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.5), 0 0 16px rgba(229, 75, 124, 0.2);
+  color: #ff85a1;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transform: translateY(-50px);
+  opacity: 0.95;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.nk-pull-indicator.ready {
+  border-color: rgba(229, 75, 124, 0.85);
+  box-shadow: 0 8px 30px rgba(229, 75, 124, 0.45);
+  background: rgba(26, 14, 22, 0.95);
+  color: #fff;
+}
+
+.nk-pull-indicator.refreshing {
+  border-color: rgba(16, 185, 129, 0.7);
+  box-shadow: 0 8px 30px rgba(16, 185, 129, 0.35);
+  background: rgba(10, 24, 18, 0.95);
+  color: #4ade80;
+}
+
+.nk-pull-label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.nk-refresh-spinner {
+  animation: nk-spin 0.75s linear infinite;
+}
+
+@keyframes nk-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+

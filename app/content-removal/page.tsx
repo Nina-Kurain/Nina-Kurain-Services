@@ -26,20 +26,22 @@ export default function ContentRemovalPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submissionId, setSubmissionId] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!confirmed || !fullName.trim() || !email.trim() || !contentUrls.trim()) {
       return;
     }
 
     setSubmitting(true);
-    // Simulate swift submission acknowledgement
-    setTimeout(() => {
-      const generatedId = 'TKT-' + Math.random().toString(36).substring(2, 9).toUpperCase();
-      setSubmissionId(generatedId);
-      setSubmitting(false);
+    try {
+      const response = await fetch('/api/reports', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({category,fullName,email,relationship,contentUrls,description,signature,confirmed}) });
+      const result = await response.json() as {referenceCode?:string;message?:string};
+      if (!response.ok) throw new Error(result.message || 'The report could not be submitted.');
+      setSubmissionId(result.referenceCode || 'Received');
       setSubmitted(true);
-    }, 900);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'The report could not be submitted.');
+    } finally { setSubmitting(false); }
   };
 
   return (
@@ -76,7 +78,7 @@ export default function ContentRemovalPage() {
           <div className="legal-article-header">
             <h1 className="legal-title">Content Reporting &amp; Expedited Removal Portal</h1>
             <div className="legal-meta">
-              <span>24/7 Moderation Review Queue</span>
+              <span>Safety review queue</span>
               <span>•</span>
               <span className="legal-badge-pill" style={{ borderColor: 'rgba(255, 77, 77, 0.4)', color: '#ff4d4d' }}>
                 Priority Escalation
@@ -85,7 +87,7 @@ export default function ContentRemovalPage() {
             <p className="legal-summary">
               We maintain zero tolerance for non-consensual imagery, real-person deepfakes, copyright violations, and any form of minor exploitation. 
               Use this official portal to submit priority takedown requests. Verified reports involving non-consensual intimate imagery or deepfakes are reviewed within 
-              <strong> 24 to 48 hours</strong>, with immediate provisional de-indexing.
+              as soon as reasonably possible. We may restrict access while a report is reviewed.
             </p>
           </div>
 
@@ -98,7 +100,7 @@ export default function ContentRemovalPage() {
               <div>
                 <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', color: '#ff4d4d' }}>Minor Safety Emergency</h4>
                 <p style={{ margin: 0, fontSize: '13px' }}>
-                  Reports regarding suspected underage content are escalated instantly and referred to law enforcement and NCMEC.
+                   Reports involving suspected child exploitation are prioritised and may be referred to appropriate authorities under applicable law.
                 </p>
               </div>
             </div>
@@ -132,7 +134,7 @@ export default function ContentRemovalPage() {
                 {submissionId}
               </div>
               <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 24px 0' }}>
-                A confirmation has been sent to <strong>{email}</strong>. Our compliance team will review the target content, perform immediate hashing/blocking, and notify you when action has been taken.
+                 Your report is recorded for review. If a response address was supplied, we may contact you for clarification and will communicate an outcome where appropriate.
               </p>
               <button 
                 onClick={() => { setSubmitted(false); setConfirmed(false); }}

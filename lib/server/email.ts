@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { token,digest } from "./password";
 import { row,run,HttpError } from "./db";
 
-export type TransactionalEmailKind="welcome"|"verify"|"reset"|"membership_active"|"payment_failed"|"membership_expired"|"membership_cancelled"|"membership_updated"|"renewal_reminder"|"test";
+export type TransactionalEmailKind="welcome"|"verify"|"reset"|"admin_otp"|"membership_active"|"payment_failed"|"membership_expired"|"membership_cancelled"|"membership_updated"|"renewal_reminder"|"test";
 type SendInput={userId?:string|null;email:string;kind:TransactionalEmailKind;subject:string;text:string;idempotencyKey:string};
 type ResendReply={id?:string;message?:string;name?:string};
 
@@ -30,6 +30,41 @@ export async function sendTransactionalEmail(input:SendInput){
 
 export async function safelySendTransactionalEmail(input:SendInput){try{return await sendTransactionalEmail(input);}catch(error){console.error("Transactional email failed",{kind:input.kind,userId:input.userId,error});return {failed:true};}}
 
+export async function sendAdminOtpEmail(userId: string, email: string, otp: string) {
+  const hashed = await digest(otp);
+  const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+  await run("DELETE FROM auth_tokens WHERE user_id=? AND kind='admin_otp'", userId);
+  await run("INSERT INTO auth_tokens(token_hash,user_id,kind,expires_at) VALUES(?,?,?,?)", hashed, userId, "admin_otp", expiresAt);
+
+  const subject = "Nina Kurain Creator Studio — Security Verification Code";
+  const text = `Your one-time security verification code for Creator Studio is:
+
+${otp}
+
+This code will expire in 10 minutes.
+
+If you did not request this login attempt, someone may be attempting to access your Creator Studio. Please secure your account immediately.`;
+
+  if (!emailReady()) {
+    console.log(`[LOCAL DEV ADMIN OTP] Code for ${email}: ${otp}`);
+    return { sent: false, devCode: otp };
+  }
+
+  try {
+    return await sendTransactionalEmail({
+      userId,
+      email,
+      kind: "admin_otp",
+      idempotencyKey: `admin_otp:${userId}:${hashed}`,
+      subject,
+      text,
+    });
+  } catch (error) {
+    await run("DELETE FROM auth_tokens WHERE token_hash=?", hashed);
+    throw error;
+  }
+}
+
 export async function sendAccountEmail(userId:string,email:string,kind:"reset"|"verify"){
   if(!emailReady())throw new HttpError(503,"Email delivery is not configured yet. Please contact the creator.");
   const value=token(),hashed=await digest(value),expiresAt=Date.now()+(kind==="reset"?3600000:86400000);
@@ -39,7 +74,7 @@ export async function sendAccountEmail(userId:string,email:string,kind:"reset"|"
   catch(error){await run("DELETE FROM auth_tokens WHERE token_hash=?",hashed);throw error;}
 }
 
-export function membershipEmail(kind:Exclude<TransactionalEmailKind,"verify"|"reset"|"welcome"|"test">,name:string,planName:string,details=""){
+export function membershipEmail(kind:Exclude<TransactionalEmailKind,"verify"|"reset"|"welcome"|"test"|"admin_otp">,name:string,planName:string,details=""){
   const first=name.trim().split(/\s+/)[0]||"there",account=`${appUrl()}/account/membership`;
   const copy={
     membership_active:{subject:`Your ${planName} access is active`,text:`Hi ${first},\n\nYour verified payment is complete and ${planName} access is now active. Your eligible private posts and films are ready.\n\nOpen your membership: ${account}`},

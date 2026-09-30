@@ -1,8 +1,9 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { env } from "cloudflare:workers";
 import { digest, token } from "./password";
 import { row, rows, run, database, sql, HttpError } from "./db";
+import { CURRENT_REQUIRED_APP_VERSION, MIN_REQUIRED_VERSION_FLOAT } from "../app-version";
 
 export type Account = {
   id: string;
@@ -123,47 +124,90 @@ export async function purgeExpiredUnverifiedUsers(): Promise<number> {
   return result.purgedUsers;
 }
 
+import { signJwt, verifyJwt, type JwtPayload } from "./jwt";
+
+export function getCookieDomain(): string | undefined {
+  try {
+    const appUrl = env.APP_URL || "";
+    if (appUrl.includes("ninakurainservices.in")) {
+      return "ninakurainservices.in";
+    }
+  } catch (_) {}
+  return undefined;
+}
+
 export async function currentUser(admin = false): Promise<Account | null> {
   const jar = await cookies();
-  if (admin) {
-    const value = jar.get(ADMIN_COOKIE)?.value;
-    if (!value || value.length !== 64) return null;
-    return row<Account>(
-      "SELECT u.id,u.email,u.display_name,u.phone,u.role,u.verified,u.active,u.comments_blocked,u.created_at,s.token_hash AS session_hash FROM auth_sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.kind='admin' AND s.expires_at>? AND u.active=1 AND u.role='admin'",
-      await digest(value),
-      Date.now()
-    );
-  }
-  const memberToken = jar.get(COOKIE)?.value;
-  if (memberToken && memberToken.length === 64) {
-    const member = await row<Account>(
-      "SELECT u.id,u.email,u.display_name,u.phone,u.role,u.verified,u.active,u.comments_blocked,u.created_at,s.token_hash AS session_hash FROM auth_sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.kind='member' AND s.expires_at>? AND u.active=1",
-      await digest(memberToken),
-      Date.now()
-    );
-    if (member) {
-      // Strict 24-hour verification enforcement:
-      // If an already-logged-in member has not verified their email within 24 hours of registration,
-      // their account is purged immediately (while preserving all payment records), and session terminated.
-      if (member.role === "member" && !member.verified) {
-        const createdAtMs = Number(member.created_at || 0);
-        const isExpiredUnverified = !createdAtMs || createdAtMs <= (Date.now() - 24 * 3600 * 1000);
-        if (isExpiredUnverified) {
-          await purgeUserData(member.id);
-          return null;
-        }
+  let tokenVal: string | undefined;
+
+  // 1. Try reading from request headers (for mobile apps or SPA with localStorage JWT)
+  try {
+    const h = await headers();
+    const authHeader = h.get("authorization") || h.get("x-auth-token");
+    if (authHeader) {
+      if (authHeader.toLowerCase().startsWith("bearer ")) {
+        tokenVal = authHeader.slice(7).trim();
+      } else {
+        tokenVal = authHeader.trim();
       }
-      return member;
+    }
+  } catch (_) {}
+
+  // 2. Try reading from cookies if header wasn't present
+  if (!tokenVal) {
+    if (admin) {
+      tokenVal = jar.get(ADMIN_COOKIE)?.value;
+    } else {
+      tokenVal = jar.get(COOKIE)?.value || jar.get(ADMIN_COOKIE)?.value;
     }
   }
-  const adminToken = jar.get(ADMIN_COOKIE)?.value;
-  if (adminToken && adminToken.length === 64) {
+
+  if (!tokenVal) return null;
+
+  // 3. If token is a JWT (contains dots), verify cryptographically (guaranteed 90-day validity)
+  if (tokenVal.includes(".")) {
+    const payload = await verifyJwt(tokenVal);
+    if (payload && payload.sub) {
+      if (admin && payload.role !== "admin") {
+        return null;
+      }
+      const user = await row<Account>(
+        "SELECT u.id,u.email,u.display_name,u.phone,u.role,u.verified,u.active,u.comments_blocked,u.created_at, ? AS session_hash FROM users u WHERE u.id=? AND u.active=1",
+        await digest(tokenVal),
+        payload.sub
+      );
+      if (user) {
+        if (admin && user.role !== "admin") return null;
+        return user;
+      }
+    }
+  }
+
+  // 4. Legacy session token lookup (64-character token in auth_sessions)
+  if (tokenVal.length === 64) {
+    const hashed = await digest(tokenVal);
+    if (admin) {
+      return row<Account>(
+        "SELECT u.id,u.email,u.display_name,u.phone,u.role,u.verified,u.active,u.comments_blocked,u.created_at,s.token_hash AS session_hash FROM auth_sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.kind='admin' AND s.expires_at>? AND u.active=1 AND u.role='admin'",
+        hashed,
+        Date.now()
+      );
+    }
+    const member = await row<Account>(
+      "SELECT u.id,u.email,u.display_name,u.phone,u.role,u.verified,u.active,u.comments_blocked,u.created_at,s.token_hash AS session_hash FROM auth_sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.kind='member' AND s.expires_at>? AND u.active=1",
+      hashed,
+      Date.now()
+    );
+    if (member) return member;
+
+    // Check if admin is browsing as member
     return row<Account>(
       "SELECT u.id,u.email,u.display_name,u.phone,u.role,u.verified,u.active,u.comments_blocked,u.created_at,s.token_hash AS session_hash FROM auth_sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.kind='admin' AND s.expires_at>? AND u.active=1 AND u.role='admin'",
-      await digest(adminToken),
+      hashed,
       Date.now()
     );
   }
+
   return null;
 }
 
@@ -198,6 +242,18 @@ export async function requireAccount(admin = false) {
 }
 
 export async function apiAccount(admin = false, requireVerified = false) {
+  try {
+    const h = await headers();
+    const ua = h.get("user-agent") || "";
+    const isApp = /NinaKurainApp/i.test(ua);
+    const match = ua.match(/NinaKurainApp\/(\d+(\.\d+)?)/i);
+    const version = match ? parseFloat(match[1]) : (isApp ? 1.0 : null);
+    if (isApp && (version === null || version < MIN_REQUIRED_VERSION_FLOAT)) {
+      throw new HttpError(426, `Mandatory app update required. Please update Nina Kurain to version ${CURRENT_REQUIRED_APP_VERSION} to access content.`);
+    }
+  } catch (e) {
+    if (e instanceof HttpError) throw e;
+  }
   const u = await currentUser(admin);
   if (!u) {
     throw new HttpError(
@@ -211,38 +267,99 @@ export async function apiAccount(admin = false, requireVerified = false) {
   return u;
 }
 
-export async function createSession(userId: string, admin: boolean, remember: boolean) {
-  const value = token();
-  const maxAge = admin ? 8 * 3600 : remember ? 30 * 86400 : 86400;
+/**
+ * Creates a persistent 90-day JWT session.
+ * Does not ask the user to re-login for at least 90 days.
+ */
+export async function createSession(userId: string, admin: boolean, remember: boolean = true): Promise<string> {
+  // Fetch user information for cryptographic JWT payload
+  const user = await row<{ id: string; email: string; role: string; display_name: string }>(
+    "SELECT id, email, role, display_name FROM users WHERE id=?",
+    userId
+  );
+
+  const email = user?.email || (admin ? env.ADMIN_EMAIL || "admin@ninakurainservices.in" : "member@ninakurainservices.in");
+  const role: "admin" | "member" = admin ? "admin" : "member";
+  const name = user?.display_name || (admin ? "Nina Kurain" : "Member");
+
+  // Mandatory 90-day persistence: 90 days * 86400 seconds = 7,776,000 seconds
+  const maxAge = 90 * 86400;
+
+  // Sign cryptographic JWT with 90-day expiry
+  const jwt = await signJwt(
+    {
+      sub: userId,
+      email,
+      role,
+      name,
+    },
+    maxAge
+  );
+
+  // Store in auth_sessions table for revocation/audit tracking
   await run(
     "INSERT INTO auth_sessions(token_hash,user_id,kind,expires_at,created_at) VALUES(?,?,?,?,?)",
-    await digest(value),
+    await digest(jwt),
     userId,
-    admin ? "admin" : "member",
+    role,
     Date.now() + maxAge * 1000,
     Date.now()
   );
+
   const jar = await cookies();
-  jar.set(admin ? ADMIN_COOKIE : COOKIE, value, {
+  const domain = getCookieDomain();
+
+  const cookieOptions = {
     httpOnly: true,
     secure: env.APP_ENV !== "local",
-    sameSite: "lax",
+    sameSite: "lax" as const,
     path: "/",
-    ...(remember || admin ? { maxAge } : {}),
-  });
+    maxAge,
+    ...(domain ? { domain } : {}),
+  };
+
+  jar.set(admin ? ADMIN_COOKIE : COOKIE, jwt, cookieOptions);
+
+  if (admin) {
+    jar.set("nk_admin", "1", {
+      httpOnly: false,
+      secure: env.APP_ENV !== "local",
+      sameSite: "lax" as const,
+      path: "/",
+      maxAge,
+      ...(domain ? { domain } : {}),
+    });
+  }
+
+  return jwt;
 }
 
 export async function clearSession(admin = false) {
   const jar = await cookies();
   const value = jar.get(admin ? ADMIN_COOKIE : COOKIE)?.value;
   if (value) await run("DELETE FROM auth_sessions WHERE token_hash=?", await digest(value));
-  jar.set(admin ? ADMIN_COOKIE : COOKIE, "", {
+  const domain = getCookieDomain();
+
+  // Clear cookie both with and without domain
+  const clearOptions = {
     httpOnly: true,
     secure: env.APP_ENV !== "local",
-    sameSite: "lax",
+    sameSite: "lax" as const,
     path: "/",
     maxAge: 0,
-  });
+  };
+
+  jar.set(admin ? ADMIN_COOKIE : COOKIE, "", clearOptions);
+  if (domain) {
+    jar.set(admin ? ADMIN_COOKIE : COOKIE, "", { ...clearOptions, domain });
+  }
+
+  if (admin) {
+    jar.set("nk_admin", "", { ...clearOptions, httpOnly: false });
+    if (domain) {
+      jar.set("nk_admin", "", { ...clearOptions, httpOnly: false, domain });
+    }
+  }
 }
 
 export async function rateLimit(key: string, limit = 10, seconds = 900) {

@@ -12,9 +12,19 @@ export async function POST(request:Request){return endpoint(async()=>{
  const eventId=request.headers.get("x-razorpay-event-id")??await digest(raw),now=Date.now();
  const processed=await row<{status:string}>("SELECT status FROM webhook_events WHERE provider='razorpay' AND event_id=?",eventId);
  if(processed?.status==="processed")return json({ok:true,duplicate:true});
- await run("INSERT OR IGNORE INTO webhook_events(id,provider,event_id,event_type,status,received_at) VALUES(?,'razorpay',?,?,'received',?)",crypto.randomUUID(),eventId,String(event.event),now);
- try{
- const entity=event.payload?.subscription?.entity;
+  await run("INSERT OR IGNORE INTO webhook_events(id,provider,event_id,event_type,status,received_at) VALUES(?,'razorpay',?,?,'received',?)",crypto.randomUUID(),eventId,String(event.event),now);
+  try{
+  const paymentLink=event.payload?.payment_link?.entity;
+  if(paymentLink?.id && String(event.event)==="payment_link.paid"){
+   const payment=event.payload?.payment?.entity;const verified=payment?.id?await provider(`/payments/${payment.id}`):null;if(!verified||verified.status!=="captured"||verified.currency!=="INR")throw new HttpError(400,"Payment verification failed.");
+   const ai=await row<{id:string;user_id:string;units:number;amount:number}>("SELECT id,user_id,units,amount FROM ai_transactions WHERE provider_reference=? AND status='pending'",paymentLink.id);
+   const creator=await row<{id:string;user_id:string}>("SELECT id,user_id FROM creator_applications WHERE provider_payment_id=? AND status='payment_pending'",paymentLink.id);
+   const ops=[] as ReturnType<typeof sql>[];
+   if(ai){if(verified.amount!==ai.amount)throw new HttpError(400,"AI credit amount mismatch.");ops.push(sql("UPDATE ai_transactions SET status='paid',updated_at=? WHERE id=?",now,ai.id),sql("INSERT INTO ai_wallets(user_id,balance,lifetime_purchased,updated_at) VALUES(?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET balance=ai_wallets.balance+excluded.balance,lifetime_purchased=ai_wallets.lifetime_purchased+excluded.lifetime_purchased,updated_at=excluded.updated_at",ai.user_id,ai.units,ai.units,now));}
+   if(creator){if(verified.amount!==25000)throw new HttpError(400,"Creator application amount mismatch.");ops.push(sql("UPDATE creator_applications SET status='payment_received',updated_at=? WHERE id=?",now,creator.id));}
+   if(ops.length){ops.push(sql("UPDATE webhook_events SET status='processed',processed_at=? WHERE provider='razorpay' AND event_id=?",now,eventId));await database().batch(ops);return json({ok:true,processed:"payment_link"});}
+  }
+  const entity=event.payload?.subscription?.entity;
  let remoteId=entity?.id??event.payload?.payment?.entity?.subscription_id;
  if(!remoteId){await run("UPDATE webhook_events SET status='processed',processed_at=? WHERE provider='razorpay' AND event_id=?",now,eventId);return json({ok:true,ignored:true});}
  const local=await row<Subscription&{pending_plan_id:string|null;created_at:number}>("SELECT * FROM subscriptions WHERE provider='razorpay' AND provider_subscription_id=?",remoteId);

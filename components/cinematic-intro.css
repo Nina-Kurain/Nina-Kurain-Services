@@ -1,0 +1,411 @@
+/* =========================================================================
+   CINEMATIC INTRO STAGE — HIGH-CONTRAST & GUARANTEED VISIBILITY
+   ========================================================================= */
+
+.cinematic-intro-stage {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  z-index: 2147483640 !important;
+  background-color: #070306 !important;
+  color: #ffffff !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer;
+  overflow: hidden !important;
+  user-select: none;
+  touch-action: none !important;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  will-change: opacity, transform;
+}
+
+.cinematic-intro-stage.is-exiting {
+  opacity: 0 !important;
+  transform: scale(1.02) !important;
+  pointer-events: none !important;
+}
+
+/* Atmospheric Ambient Veil & Radiant Blooms */
+.cinematic-ambient-veil {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(35, 10, 18, 0.92) 0%, #070306 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cinematic-intro-glow {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.5;
+}
+
+.cinematic-intro-glow.orb-center {
+  width: min(520px, 90vw);
+  height: min(520px, 90vw);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(230, 57, 111, 0.28) 0%, rgba(138, 22, 50, 0.12) 50%, transparent 70%);
+}
+
+.cinematic-intro-glow.orb-bottom {
+  width: min(640px, 95vw);
+  height: min(380px, 60vw);
+  bottom: -5%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(244, 194, 141, 0.18) 0%, rgba(180, 50, 80, 0.08) 60%, transparent 75%);
+}
+
+/* Skip Intro Pill */
+.cinematic-skip-pill {
+  position: absolute;
+  top: max(22px, env(safe-area-inset-top, 22px));
+  right: max(22px, env(safe-area-inset-right, 22px));
+  z-index: 2147483645 !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(230, 57, 111, 0.35);
+  border: 1px solid rgba(255, 140, 180, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #ffffff !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 11px 22px;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.75), 0 0 16px rgba(230, 57, 111, 0.35);
+  transition: all 0.25s ease;
+}
+
+.cinematic-skip-pill:hover {
+  background: #e6396f;
+  border-color: #ffb3c6;
+  color: #fff !important;
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 8px 30px rgba(230, 57, 111, 0.6);
+}
+
+.cinematic-skip-pill .skip-arrow {
+  transition: transform 0.2s ease;
+}
+
+.cinematic-skip-pill:hover .skip-arrow {
+  transform: rotate(90deg);
+}
+
+/* Text Stage Container */
+.cinematic-text-canvas {
+  position: relative;
+  z-index: 20;
+  width: 100%;
+  max-width: 860px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 420px;
+  text-align: center;
+}
+
+/* Individual Frame */
+.cinematic-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  opacity: 1 !important;
+  visibility: visible !important;
+  animation: cinematicFadeIn 0.4s ease-out forwards;
+}
+
+/* Portrait Badge in Welcome Frame */
+.cinematic-portrait-badge {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  margin-bottom: 4px;
+}
+
+.cinematic-badge-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(from 180deg at 50% 50%, #e6396f 0deg, #f4c28d 140deg, #d1305c 260deg, #e6396f 360deg);
+  opacity: 0.9;
+}
+
+.cinematic-badge-img {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85);
+  display: block;
+}
+
+/* Frame Kickers & Accents */
+.cinematic-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #ff9cb7 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.cinematic-kicker .sparkle-icon {
+  color: #ff85a2;
+}
+
+.cinematic-kicker.gold-shimmer {
+  color: #f7d5ab !important;
+}
+
+.cinematic-greeting-sub {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: clamp(12px, 2.5vw, 15px);
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: #edd3db !important;
+  opacity: 1 !important;
+}
+
+/* Text Typography - SOLID HIGH CONTRAST (Never Transparent) */
+.cinematic-text {
+  margin: 0;
+  padding: 0;
+  font-weight: 400;
+  line-height: 1.05;
+  color: #ffffff !important;
+  text-rendering: optimizeLegibility;
+}
+
+.nina-title {
+  font-family: Georgia, "Playfair Display", "Times New Roman", serif;
+  font-size: clamp(48px, 10vw, 88px);
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ffffff !important;
+  text-shadow: 0 0 24px rgba(230, 57, 111, 0.6), 0 3px 14px rgba(0, 0, 0, 0.9);
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.cinematic-tag {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  color: #e5879d !important;
+  text-transform: uppercase;
+  opacity: 1 !important;
+}
+
+/* Direct Enter Button Inside Frame */
+.cinematic-enter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px 28px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #e6396f 0%, #b8224d 100%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 8px 30px rgba(230, 57, 111, 0.45);
+  transition: all 0.25s ease;
+}
+
+.cinematic-enter-btn:hover {
+  background: linear-gradient(135deg, #ff4d84 0%, #c82855 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 36px rgba(230, 57, 111, 0.65);
+}
+
+/* Creator Bio Quote in Phase 2 */
+.cinematic-intro-quote {
+  margin: 6px 0 10px;
+  padding: 0 16px;
+  font-family: Georgia, "Playfair Display", serif;
+  font-style: italic;
+  font-size: clamp(17px, 3.6vw, 24px);
+  line-height: 1.6;
+  color: #f7e8e4 !important;
+  max-width: 740px;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85);
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Disciplines Pill Row */
+.cinematic-disciplines-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 6px 0 10px;
+}
+
+.cinematic-pill-tag {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fcf1f4 !important;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 6px 16px;
+  border-radius: 9999px;
+  backdrop-filter: blur(8px);
+}
+
+.cinematic-pill-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #e6396f;
+  opacity: 0.8;
+}
+
+/* Step Dots Navigation */
+.cinematic-step-dots {
+  position: absolute;
+  bottom: max(48px, env(safe-area-inset-bottom, 48px));
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cinematic-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  padding: 0;
+}
+
+.cinematic-dot.is-active {
+  width: 28px;
+  border-radius: 9999px;
+  background: #e6396f;
+  box-shadow: 0 0 12px rgba(230, 57, 111, 0.7);
+}
+
+/* Tap to Advance Hint */
+.cinematic-tap-hint {
+  position: absolute;
+  bottom: max(18px, env(safe-area-inset-bottom, 18px));
+  z-index: 30;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45) !important;
+  pointer-events: none;
+}
+
+/* =========================================================================
+   KEYFRAME ANIMATIONS - FAST AND NEVER TRAPPED
+   ========================================================================= */
+
+@keyframes cinematicFadeIn {
+  from {
+    opacity: 0.85;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 640px) {
+  .cinematic-text-canvas {
+    padding: 0 16px;
+    min-height: 340px;
+  }
+
+  .cinematic-portrait-badge {
+    width: 76px;
+    height: 76px;
+  }
+
+  .cinematic-skip-pill {
+    padding: 8px 16px;
+    font-size: 10px;
+  }
+
+  .nina-title {
+    font-size: clamp(40px, 9.5vw, 64px);
+    letter-spacing: 0.1em;
+  }
+
+  .cinematic-enter-btn {
+    padding: 10px 22px;
+    font-size: 12px;
+  }
+
+  .cinematic-intro-quote {
+    font-size: clamp(15px, 4.2vw, 19px);
+    line-height: 1.5;
+    padding: 0 8px;
+  }
+
+  .cinematic-disciplines-row {
+    gap: 6px;
+  }
+
+  .cinematic-pill-tag {
+    font-size: 9.5px;
+    padding: 4px 10px;
+    letter-spacing: 0.1em;
+  }
+
+  .cinematic-step-dots {
+    bottom: max(44px, env(safe-area-inset-bottom, 44px));
+  }
+}

@@ -3,7 +3,7 @@ import Link from "@/components/site-link";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
 import { Camera, ArrowRight, Mail, Sparkles, CheckCircle2, Layers, Palette, Eye } from "lucide-react";
-import { NINA_ENTITY, getBreadcrumbListSchema } from "@/lib/seo/nina-entity";
+import { NINA_ENTITY, getBreadcrumbListSchema, getImageObjectSchema } from "@/lib/seo/nina-entity";
 import { PHOTOS_DATA } from "@/lib/photos-data";
 import { PortfolioClient } from "@/components/portfolio-client";
 
@@ -46,7 +46,7 @@ export default function PortfolioPage() {
     "@graph": [
       {
         "@type": "CollectionPage",
-        "@id": `${NINA_ENTITY.canonicalBase}/portfolio/#webpage`,
+        "@id": `${NINA_ENTITY.canonicalBase}/portfolio#webpage`,
         url: `${NINA_ENTITY.canonicalBase}/portfolio`,
         name: "Nina Kurain Portfolio | Curated Creative & Editorial Works",
         description:
@@ -59,6 +59,23 @@ export default function PortfolioPage() {
         { name: NINA_ENTITY.name, url: `${NINA_ENTITY.canonicalBase}/` },
         { name: "Portfolio", url: `${NINA_ENTITY.canonicalBase}/portfolio` },
       ]),
+      ...PHOTOS_DATA.slice(0, 12).map((photo) =>
+        getImageObjectSchema({
+          id: `${NINA_ENTITY.canonicalBase}/photos/${photo.slug}#image`,
+          url: photo.src,
+          pageUrl: `${NINA_ENTITY.canonicalBase}/photos/${photo.slug}`,
+          name: photo.title,
+          caption: photo.caption,
+          description: photo.description,
+          width: photo.width,
+          height: photo.height,
+          datePublished: photo.datePublished,
+          creditText: NINA_ENTITY.name,
+          copyrightNotice: `© 2026 ${NINA_ENTITY.name}. All rights reserved.`,
+          license: `${NINA_ENTITY.canonicalBase}/terms-and-conditions`,
+          acquireLicensePage: `${NINA_ENTITY.canonicalBase}/photos/${photo.slug}`,
+        })
+      ),
     ],
   };
 

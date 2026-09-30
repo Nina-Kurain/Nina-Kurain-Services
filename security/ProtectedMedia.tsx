@@ -51,6 +51,7 @@ export const ProtectedImage = forwardRef<HTMLImageElement, ImgHTMLAttributes<HTM
       <div className="nk-protected-wrapper" style={{ width: "100%", height: "100%", position: "relative" }}>
         <img
           ref={ref}
+          alt={props.alt || ""}
           {...props}
           draggable={false}
           onContextMenu={blockAction}
@@ -74,10 +75,11 @@ export const ProtectedImage = forwardRef<HTMLImageElement, ImgHTMLAttributes<HTM
  * ============================================================================
  */
 export function ProtectedNextImage(props: ImageProps) {
-  const { className, style, ...rest } = props;
+  const { className, style, alt, ...rest } = props;
   return (
     <div className={`nk-protected-wrapper ${className || ""}`} style={{ position: "relative", ...style }}>
       <Image
+        alt={alt || ""}
         {...rest}
         draggable={false}
         onContextMenu={blockAction}

@@ -8,7 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
-import { LayoutDashboard, FileImage, Users, Sparkles, CreditCard, Settings, ImagePlus, MessageCircle, MessageSquareText, Plus, Upload, Trash2, Pencil, ArrowRight, UserRound, Grid3X3, Clapperboard, Heart, Archive, Star, CirclePlay, Clock3, HardDrive, CloudUpload, Unplug, MailCheck, ShieldCheck, Globe2, IndianRupee, ExternalLink, Copy, CheckCircle2, Check, QrCode } from "lucide-react";
+import { HeaderNavDropdown } from "@/components/header-nav-dropdown";
+import { LayoutDashboard, FileImage, Users, Sparkles, CreditCard, Settings, ImagePlus, MessageCircle, MessageSquareText, Plus, Upload, Trash2, Pencil, ArrowRight, UserRound, Grid3X3, Clapperboard, Heart, Archive, Star, CirclePlay, Clock3, HardDrive, CloudUpload, Unplug, MailCheck, ShieldCheck, Globe2, IndianRupee, ExternalLink, Copy, CheckCircle2, Check, QrCode, Bookmark, ChevronDown, Smartphone, Download, Apple } from "lucide-react";
 import { api, useData, State, Notice, Logout, download, CommentThread } from "../live-client";
 import { ThemeQuickToggle, ThemeSelector } from "../theme-controls";
 import { PrivateMediaMark, ProtectedImage, ProtectedVideo } from "@/components/protected-media";
@@ -19,7 +20,10 @@ import { ReelViewer } from "@/components/post-viewer/reel-viewer";
 import { NinaStudioEditor, MediaStudioTriggerBanner } from "@/components/media-editor/nina-studio-editor";
 import { PaymentQrGenerator } from "@/components/admin/payment-qr-generator";
 import { DatabaseStorageManager, formatBytes } from "@/components/admin/database-storage-manager";
-const nav = [{ id: "overview", label: "Dashboard", path: "/admin", icon: LayoutDashboard }, { id: "profile", label: "Creator profile", path: "/admin/profile", icon: UserRound }, { id: "editor", label: "Studio Editor", path: "/admin/editor", icon: Sparkles }, { id: "posts", label: "Posts", path: "/admin/posts", icon: FileImage }, { id: "stories", label: "Stories", path: "/admin/stories", icon: CirclePlay }, { id: "media", label: "Media", path: "/admin/media", icon: ImagePlus }, { id: "members", label: "Members", path: "/admin/members", icon: Users }, { id: "plans", label: "Memberships", path: "/admin/memberships", icon: Sparkles }, { id: "payments", label: "Payments", path: "/admin/payments", icon: CreditCard }, { id: "comments", label: "Comments", path: "/admin/comments", icon: MessageCircle }, { id: "feedback", label: "Feedback", path: "/admin/feedback", icon: MessageSquareText }, { id: "settings", label: "Settings", path: "/admin/settings", icon: Settings }];
+import { AdminAnalyticsCharts } from "@/components/admin/admin-analytics-charts";
+import { TrustSafety } from "@/components/admin/trust-safety";
+import { APP_VERSION_DISPLAY } from "@/lib/app-version";
+const nav = [{ id: "overview", label: "Dashboard", path: "/admin", icon: LayoutDashboard }, { id: "profile", label: "Creator profile", path: "/admin/profile", icon: UserRound }, { id: "editor", label: "Studio Editor", path: "/admin/editor", icon: Sparkles }, { id: "posts", label: "Posts", path: "/admin/posts", icon: FileImage }, { id: "stories", label: "Stories", path: "/admin/stories", icon: CirclePlay }, { id: "media", label: "Media", path: "/admin/media", icon: ImagePlus }, { id: "safety", label: "Safety queue", path: "/admin/safety", icon: ShieldCheck }, { id: "members", label: "Members", path: "/admin/members", icon: Users }, { id: "plans", label: "Memberships", path: "/admin/memberships", icon: Sparkles }, { id: "payments", label: "Payments", path: "/admin/payments", icon: CreditCard }, { id: "comments", label: "Comments", path: "/admin/comments", icon: MessageCircle }, { id: "feedback", label: "Feedback", path: "/admin/feedback", icon: MessageSquareText }, { id: "settings", label: "Settings", path: "/admin/settings", icon: Settings }];
 const money = (n: number) => `₹${n.toLocaleString("en-IN")}`; const date = (n: number | null) => n ? new Date(n).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "—";
 type Act = (path: string, value: unknown) => Promise<boolean>;
 function Title({ title, copy, children }: { title: string; copy: string; children?: React.ReactNode }) { return <div className="demo-page-title"><div><span className="section-kicker">CREATOR STUDIO</span><h1>{title}</h1><p>{copy}</p></div><div className="live-toolbar">{children}</div></div>; }
@@ -104,7 +108,7 @@ function AdminCreatorProfile({ data, edit, archive, remove, removeComment, busy,
       return (
         <button type="button" className="creator-tile" key={p.id} onClick={() => setSelected(p)} aria-label={`View ${p.is_reel ? "reel" : "post"}: ${p.title}`}>
           <div>
-            {p.media?.[0]?.mime.startsWith("video/") ? <ProtectedVideo muted preload="metadata" src={p.media[0].url} /> : <ProtectedImage src={p.media?.[0]?.url} alt={p.title} loading="lazy" decoding="async" />}
+            {p.media?.[0]?.mime.startsWith("video/") ? <ProtectedVideo muted playsInline preload="auto" src={p.media[0].url} /> : <ProtectedImage src={p.media?.[0]?.url} alt={p.title} loading="lazy" decoding="async" />}
             <span className="tile-overlay"><Heart size={17} fill="currentColor" />{p.like_count ?? 0}<MessageCircle size={17} />{p.comment_count ?? 0}</span>
             {p.is_reel && <span className="tile-reel"><Clapperboard size={17} /></span>}
             {p.media && p.media.length > 1 && <span className="tile-multi">▣</span>}
@@ -113,7 +117,7 @@ function AdminCreatorProfile({ data, edit, archive, remove, removeComment, busy,
         </button>
       );
     })}</div> : <div className="live-empty admin-profile-empty"><h2>No content in this collection yet.</h2><p>Create a post or reel and select the appropriate access.</p><Link className="button" href="/admin/posts/new"><Plus size={16} />Create first post</Link></div>}
-    {selected && (selected.is_reel ? <ReelViewer post={selected} avatar={creator.avatar} creatorName={creator.name} busy={busy || toggleBusy} message="" likesEnabled onClose={handleClose} onToggle={togglePost} admin onEdit={() => { setSelected(null); edit(selected); }} onArchive={async () => { if (await archive(selected)) setSelected(null); }} onDelete={() => { setSelected(null); remove(selected); }} onRemoveComment={removeComment} /> : <PostViewer post={selected} avatar={creator.avatar} creatorName={creator.name} busy={busy || toggleBusy} message="" likesEnabled onClose={handleClose} onToggle={togglePost} admin onEdit={() => { setSelected(null); edit(selected); }} onArchive={async () => { if (await archive(selected)) setSelected(null); }} onDelete={() => { setSelected(null); remove(selected); }} onRemoveComment={removeComment} />)}
+    {selected && (selected.is_reel ? <ReelViewer post={selected} posts={visible.length ? visible : posts} onNavigatePost={(next) => setSelected(next)} avatar={creator.avatar} creatorName={creator.name} busy={busy || toggleBusy} message="" likesEnabled onClose={handleClose} onToggle={togglePost} admin onEdit={() => { setSelected(null); edit(selected); }} onArchive={async () => { if (await archive(selected)) setSelected(null); }} onDelete={() => { setSelected(null); remove(selected); }} onRemoveComment={removeComment} /> : <PostViewer post={selected} posts={visible.length ? visible : posts} onNavigatePost={(next) => setSelected(next)} avatar={creator.avatar} creatorName={creator.name} busy={busy || toggleBusy} message="" likesEnabled onClose={handleClose} onToggle={togglePost} admin onEdit={() => { setSelected(null); edit(selected); }} onArchive={async () => { if (await archive(selected)) setSelected(null); }} onDelete={() => { setSelected(null); remove(selected); }} onRemoveComment={removeComment} />)}
   </section>;
 }
 export function Studio({ view = "overview" }: { view?: string }) {
@@ -121,10 +125,20 @@ export function Studio({ view = "overview" }: { view?: string }) {
   const [busy, setBusy] = useState(false), [message, setMessage] = useState(""), [editor, setEditor] = useState<ContentPost | null>(null), [member, setMember] = useState<any>(null), [confirm, setConfirm] = useState<{ title: string; copy: string; path: string; data: unknown } | null>(null);
   const [studioEditorOpen, setStudioEditorOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [downloadModalOpen, setDownloadModalOpen] = useState(false);
   const [studioEditorFiles, setStudioEditorFiles] = useState<File[]>([]);
   const [studioEditorMedia, setStudioEditorMedia] = useState<Array<{ id?: string; name: string; mime: string; url: string; editRecipe?: string }>>([]);
   const [existingProjectId, setExistingProjectId] = useState<string | undefined>(undefined);
   const [editorPendingCallback, setEditorPendingCallback] = useState<((assets: Asset[]) => void) | null>(null);
+
+  useEffect(() => {
+    try {
+      document.documentElement.dataset.admin = "true";
+      localStorage.setItem("nk_admin_mode", "true");
+      document.cookie = "nk_admin=1; path=/; max-age=7776000; SameSite=Lax";
+    } catch (_) {}
+  }, []);
+
   const openStudioEditor = (files?: File[], projId?: string, onAssetsDone?: (assets: Asset[]) => void, mediaItems?: Array<{ id?: string; name: string; mime: string; url: string; editRecipe?: string }>) => {
     setStudioEditorFiles(files ?? []);
     setStudioEditorMedia(mediaItems ?? []);
@@ -135,8 +149,8 @@ export function Studio({ view = "overview" }: { view?: string }) {
   };
   async function act(path: string, data: unknown) { if (busy) return false; setBusy(true); setMessage(""); try { const r = await api(`/api/studio/${path}`, data); setMessage(r.message ?? "Saved."); await result.refresh(); if (path === "plan") await plans.refresh(); return true; } catch (e) { setMessage(e instanceof Error ? e.message : "Could not save. Please retry."); return false; } finally { setBusy(false); } }
   const d = result.data;
-  return <main className="demo-app live-admin"><div className="demo-layout"><aside className="demo-sidebar"><div className="demo-brand"><Link href="/" className="wordmark" aria-label="Nina Kurain home"><BrandLogo height={44} width={66} priority /></Link><small>PRIVATE CREATOR STUDIO</small></div><nav aria-label="Admin navigation">{nav.map(n => <Link href={n.path} key={n.id} className={main === n.id ? "active" : ""}><n.icon size={18} />{n.label}</Link>)}</nav><div className="demo-side-card"><span className="demo-avatar">NK</span><div><strong>Creator account</strong><small>Authenticated admin</small></div></div><Link className="button quiet-button" href="/login">OPEN MEMBER VIEW<ArrowRight size={14} /></Link></aside><section className="demo-main"><header className="demo-topbar"><div><span>NINA KURAIN STUDIO</span><strong>Your private creative space.</strong></div><div className="header-actions"><Button type="button" className="topbar-editor-btn" onClick={() => setPaymentModalOpen(true)} style={{ background: "linear-gradient(135deg, #a92f49 0%, #d43b60 100%)", color: "#fff", display: "inline-flex", alignItems: "center", gap: 6 }}><QrCode size={14} /> Custom Payment QR</Button><Button type="button" className="topbar-editor-btn" onClick={() => openStudioEditor()}><Sparkles size={14} /> Studio Editor</Button><ThemeQuickToggle /><span className="live-updating">Live · refreshes within 6 seconds</span><Logout admin /></div><select className="live-drawer-nav" aria-label="Admin page" value={main} onChange={e => location.assign(nav.find(n => n.id === e.target.value)!.path)}>{nav.map(n => <option value={n.id} key={n.id}>{n.label}</option>)}</select></header><section className="demo-content admin-surface">{message && <Notice>{message}</Notice>}{view === "new" ? <><Title title="Create a post." copy="Share something with exactly the members you choose." /><section className="live-panel"><PostEditor plans={plans.data?.plans ?? []} act={act} busy={busy} close={() => location.assign("/admin/posts")} onLaunchEditor={openStudioEditor} /></section></> : !d ? <State loading={result.loading} error={result.error} retry={result.refresh} /> : <>
-    {main === "overview" && <><Title title="Your studio, at a glance." copy="Live database totals. Complimentary memberships are access grants, not payment revenue."><Link className="button" href="/admin/posts/new"><Plus size={16} />NEW POST</Link></Title><div className="admin-metrics">{[["Total members", d.users.total_users], ["Active memberships", d.subscriptions.active_memberships ?? 0], ["Grace period", d.subscriptions.grace_memberships ?? 0], ["Expired memberships", d.subscriptions.expired_memberships ?? 0], ["Revenue this month", money(d.revenue.revenue / 100)], ["Published posts", d.stats.published_posts ?? 0], ["Drafts", d.stats.draft_posts ?? 0], ["Total posts", d.stats.total_posts]].map(([label, value]) => <article key={label}><p>{label}</p><strong>{value}</strong></article>)}</div><div className="live-grid"><section className="live-panel"><h2>Membership overview</h2>{d.members.map((m: any) => <div className="billing-row" key={m.id}><span>{m.name}</span><strong>{m.count}</strong></div>)}</section><section className="live-panel"><h2>Connection status</h2><p>Email delivery: <strong>{d.emailReady ? "Configured" : "Needs setup"}</strong></p><p>Razorpay: <strong>{d.billing?.ready ? `${String(d.billing.mode).toUpperCase()} ready` : "Needs setup"}</strong>{d.billing?.ready && <Link className="text-link" style={{ marginLeft: 8, color: "#e56b83", fontWeight: 600 }} href="/admin/settings#payment-test">Test ₹1 Live →</Link>}</p><p>Database and private media storage are connected. Open Settings for detailed integration checks.</p></section></div><section className="live-panel"><h2>Recent admin activity</h2>{d.activity.length ? d.activity.map((a: any, i: number) => <div className="billing-row" key={i}><span>{a.action.replaceAll("-", " ")}</span><small>{date(a.created_at)}</small></div>) : <p>Your content and membership changes will appear here.</p>}</section></>}
+  return <main className="demo-app live-admin"><div className="demo-layout"><aside className="demo-sidebar"><div className="demo-brand"><Link href="/" className="wordmark" aria-label="Nina Kurain home"><BrandLogo height={44} width={66} priority /></Link><small>PRIVATE CREATOR STUDIO</small></div><nav aria-label="Admin navigation">{nav.map(n => <Link href={n.path} key={n.id} className={main === n.id ? "active" : ""}><n.icon size={18} />{n.label}</Link>)}</nav><div className="demo-side-card"><span className="demo-avatar">NK</span><div><strong>Creator account</strong><small>Authenticated admin</small></div></div><Link className="button quiet-button" href="/login">OPEN MEMBER VIEW<ArrowRight size={14} /></Link><button type="button" className="button" onClick={() => setDownloadModalOpen(true)} style={{ marginTop: 8, width: "100%", background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, fontWeight: 700, fontSize: 12 }}><Download size={14} /> DOWNLOAD LATEST APP</button></aside><section className="demo-main"><header className="demo-topbar"><div><span>NINA KURAIN STUDIO</span><strong>Your private creative space.</strong></div><div className="header-actions"><div className="header-nav-wrap admin-nav-dropdown-wrap"><HeaderNavDropdown align="start" btnClassName="header-nav-dropdown-btn studio-nav-dropdown-btn" ariaLabel="Studio navigation menu" label={(() => { const currentItem = nav.find(n => n.id === main); const NavIcon = currentItem?.icon || LayoutDashboard; return <><NavIcon size={15} /> {currentItem?.label || "Studio"}</>; })()}>{nav.map(n => <Link href={n.path} key={n.id} className={main === n.id ? "active" : ""}><n.icon size={15} /> {n.label}</Link>)}<div style={{ height: 1, background: "rgba(229, 107, 131, 0.2)", margin: "4px 0" }} /><Link href="/feed"><Grid3X3 size={15} /> Members Feed</Link><Link href="/saved"><Bookmark size={15} /> Saved Posts</Link><div style={{ height: 1, background: "rgba(229, 107, 131, 0.2)", margin: "4px 0" }} /><button type="button" onClick={() => setDownloadModalOpen(true)} style={{ cursor: "pointer", color: "#10b981", fontWeight: 600, display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", border: "none", background: "transparent" }}><Download size={15} /> Download Native Apps (${APP_VERSION_DISPLAY})</button></HeaderNavDropdown></div><Button type="button" className="topbar-editor-btn" onClick={() => setDownloadModalOpen(true)} style={{ background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", color: "#fff", display: "inline-flex", alignItems: "center", gap: 6 }}><Smartphone size={14} /> Download App (${APP_VERSION_DISPLAY})</Button><Button type="button" className="topbar-editor-btn" onClick={() => setPaymentModalOpen(true)} style={{ background: "linear-gradient(135deg, #a92f49 0%, #d43b60 100%)", color: "#fff", display: "inline-flex", alignItems: "center", gap: 6 }}><QrCode size={14} /> Custom Payment QR</Button><Button type="button" className="topbar-editor-btn" onClick={() => openStudioEditor()}><Sparkles size={14} /> Studio Editor</Button><ThemeQuickToggle /><span className="live-updating">Live · refreshes within 6 seconds</span><Logout admin /></div></header><section className="demo-content admin-surface">{message && <Notice>{message}</Notice>}{view === "new" ? <><Title title="Create a post." copy="Share something with exactly the members you choose." /><section className="live-panel"><PostEditor plans={plans.data?.plans ?? []} act={act} busy={busy} close={() => location.assign("/admin/posts")} onLaunchEditor={openStudioEditor} /></section></> : !d ? <State loading={result.loading} error={result.error} retry={result.refresh} /> : <>
+    {main === "overview" && <><Title title="Your studio, at a glance." copy="Live database totals. Complimentary memberships are access grants, not payment revenue."><Link className="button" href="/admin/posts/new"><Plus size={16} />NEW POST</Link></Title><div className="admin-metrics">{[["Total members", d.users.total_users], ["Active memberships", d.subscriptions.active_memberships ?? 0], ["Grace period", d.subscriptions.grace_memberships ?? 0], ["Expired memberships", d.subscriptions.expired_memberships ?? 0], ["Revenue this month", money(d.revenue.revenue / 100)], ["Published posts", d.stats.published_posts ?? 0], ["Drafts", d.stats.draft_posts ?? 0], ["Total posts", d.stats.total_posts]].map(([label, value]) => <article key={label}><p>{label}</p><strong>{value}</strong></article>)}</div><AdminAnalyticsCharts data={d} /><section className="live-panel" style={{ marginTop: 20, border: "1px solid rgba(16, 185, 129, 0.3)", background: "rgba(16, 185, 129, 0.04)" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 14 }}><div><span className="section-kicker" style={{ color: "#10b981" }}>OFFICIAL NATIVE APPLICATIONS · {APP_VERSION_DISPLAY}</span><h2 style={{ margin: "4px 0 0" }}>Native App Downloads for Creators &amp; VIP Members</h2></div><Button type="button" onClick={() => setDownloadModalOpen(true)} style={{ background: "#10b981", color: "#000", fontWeight: 700, gap: 6 }}><Download size={14} /> View All Installers</Button></div><p style={{ fontSize: 13, color: "var(--ag-muted)", marginBottom: 16 }}>Mobile access to the VIP feed and Creator Studio is strictly enforced via our secure native applications. Android APKs and iOS WebClip profiles can be installed directly below.</p><div className="live-grid two"><div style={{ padding: 14, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}><div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, color: "#ff85ad", fontWeight: 700 }}><Smartphone size={18} /> Creator Studio (Android APK)</div><p style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>{APP_VERSION_DISPLAY} · Direct access to creator management, studio editor, and analytics on Android.</p><a href="/downloads/NinaKurainStudio.apk" download="NinaKurainStudio.apk" className="button" style={{ width: "100%", textAlign: "center", background: "#d43b60", color: "#fff", fontSize: 12, padding: "8px 12px" }}><Download size={14} style={{ marginRight: 6 }} /> Download Studio APK</a></div><div style={{ padding: 14, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}><div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, color: "#ff85ad", fontWeight: 700 }}><Apple size={18} /> Nina Studio for iOS (WebClip / IPA)</div><p style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>{APP_VERSION_DISPLAY} · Dedicated iOS app for iPhone &amp; iPad with full camera &amp; media library permissions.</p><div style={{ display: "flex", gap: 8 }}><a href="/downloads/NinaKurainStudio.mobileconfig" download="NinaKurainStudio.mobileconfig" className="button" style={{ flex: 1, textAlign: "center", background: "#d43b60", color: "#fff", fontSize: 11, padding: "8px 6px" }}><Apple size={13} style={{ marginRight: 4 }} /> Install Profile</a><a href="/downloads/NinaKurainStudio.ipa" download="NinaKurainStudio.ipa" className="button quiet-button" style={{ flex: 1, textAlign: "center", fontSize: 11, padding: "8px 6px" }}><Download size={13} style={{ marginRight: 4 }} /> .IPA</a></div></div><div style={{ padding: 14, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}><div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, color: "#10b981", fontWeight: 700 }}><Smartphone size={18} /> VIP Member App (Android APK)</div><p style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>{APP_VERSION_DISPLAY} · Protected VIP feed, DRM screenshot prevention, exclusive reels, and vault.</p><a href="/downloads/NinaKurain.apk" download="NinaKurain.apk" className="button" style={{ width: "100%", textAlign: "center", background: "#10b981", color: "#000", fontWeight: 700, fontSize: 12, padding: "8px 12px" }}><Download size={14} style={{ marginRight: 6 }} /> Download Member APK</a></div><div style={{ padding: 14, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}><div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, color: "#38bdf8", fontWeight: 700 }}><Apple size={18} /> Nina Kurain VIP (iOS WebClip / IPA)</div><p style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>{APP_VERSION_DISPLAY} · Fullscreen standalone VIP profile &amp; IPA for iPhone &amp; iPad with screenshot shield.</p><div style={{ display: "flex", gap: 8 }}><a href="/downloads/NinaKurain.mobileconfig" download="NinaKurain.mobileconfig" className="button quiet-button" style={{ flex: 1, textAlign: "center", fontSize: 11, padding: "8px 6px" }}><Apple size={13} style={{ marginRight: 4 }} /> Install Profile</a><a href="/downloads/NinaKurain.ipa" download="NinaKurain.ipa" className="button quiet-button" style={{ flex: 1, textAlign: "center", fontSize: 11, padding: "8px 6px" }}><Download size={13} style={{ marginRight: 4 }} /> .IPA</a></div></div></div></section><div className="live-grid"><section className="live-panel"><h2>Membership overview</h2>{d.members.map((m: any) => <div className="billing-row" key={m.id}><span>{m.name}</span><strong>{m.count}</strong></div>)}</section><section className="live-panel"><h2>Connection status</h2><p>Email delivery: <strong>{d.emailReady ? "Configured" : "Needs setup"}</strong></p><p>Razorpay: <strong>{d.billing?.ready ? `${String(d.billing.mode).toUpperCase()} ready` : "Needs setup"}</strong>{d.billing?.ready && <Link className="text-link" style={{ marginLeft: 8, color: "#e56b83", fontWeight: 600 }} href="/admin/settings#payment-test">Test ₹1 Live →</Link>}</p><p>Database and private media storage are connected. Open Settings for detailed integration checks.</p></section></div><section className="live-panel"><h2>Recent admin activity</h2>{d.activity.length ? d.activity.map((a: any, i: number) => <div className="billing-row" key={i}><span>{a.action.replaceAll("-", " ")}</span><small>{date(a.created_at)}</small></div>) : <p>Your content and membership changes will appear here.</p>}</section></>}
     {main === "profile" && <AdminCreatorProfile data={d} edit={setEditor} busy={busy} onOpenEditor={openStudioEditor} archive={p => act("post", postPayload({ ...p, status: "archived" }))} remove={p => setConfirm({ title: "Delete this post?", copy: `“${p.title}” and its comments, likes and bookmarks will be permanently removed. Media remains in the library.`, path: "delete-post", data: { id: p.id } })} removeComment={id => setConfirm({ title: "Remove this comment?", copy: "The comment will no longer appear to members.", path: "delete-comment", data: { id } })} />}
     {main === "editor" && (
       <>
@@ -164,8 +178,25 @@ export function Studio({ view = "overview" }: { view?: string }) {
             <div className="live-grid three">
               {d.projects.map((proj: any) => (
                 <article className="live-panel live-media-card" key={proj.id}>
-                  {proj.items?.[0]?.output_url || proj.items?.[0]?.source_url ? (
-                    <ProtectedImage src={proj.items[0].output_url || proj.items[0].source_url} alt={proj.title} />
+                  {proj.items?.[0]?.cover_url ? (
+                    <ProtectedImage src={proj.items[0].cover_url} alt={proj.title} />
+                  ) : proj.items?.[0]?.output_url || proj.items?.[0]?.source_url ? (
+                    proj.project_type === "video" || proj.project_type === "reel" || (proj.items[0].output_url && proj.items[0].output_url.endsWith(".mp4")) ? (
+                      <div style={{ position: "relative", height: 160, borderRadius: 8, overflow: "hidden", background: "#000" }}>
+                        <ProtectedVideo
+                          src={`${proj.items[0].output_url || proj.items[0].source_url}#t=0.001`}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                        <div style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.75)", borderRadius: 4, padding: "3px 6px", display: "flex", alignItems: "center", gap: 4, color: "#ff85ad", fontSize: 11, fontWeight: 700 }}>
+                          <CirclePlay size={12} /> REEL
+                        </div>
+                      </div>
+                    ) : (
+                      <ProtectedImage src={proj.items[0].output_url || proj.items[0].source_url} alt={proj.title} />
+                    )
                   ) : (
                     <div style={{ height: 160, display: "grid", placeItems: "center", background: "rgba(255,255,255,0.03)", borderRadius: 8 }}>
                       <Sparkles size={32} style={{ opacity: 0.4 }} />
@@ -199,7 +230,7 @@ export function Studio({ view = "overview" }: { view?: string }) {
     )}
     {main === "posts" && <PostList posts={d.posts} edit={setEditor} act={act} busy={busy} remove={p => setConfirm({ title: "Delete this post?", copy: `“${p.title}” and its comments, likes and bookmarks will be permanently removed. Media remains in the library.`, path: "delete-post", data: { id: p.id } })} />}
     {main === "stories" && <StoryManager data={d} act={act} busy={busy} onLaunchEditor={openStudioEditor} remove={story => setConfirm({ title: "Delete this story?", copy: `“${story.title}” will be permanently removed. Its media remains in the library.`, path: "delete-post", data: { id: story.id } })} />}
-    {main === "media" && (
+     {main === "media" && (
       <MediaLibrary
         media={d.media}
         refresh={result.refresh}
@@ -216,7 +247,8 @@ export function Studio({ view = "overview" }: { view?: string }) {
           });
         }}
       />
-    )}
+     )}
+     {main === "safety" && <TrustSafety />}
     {main === "members" && <MemberList members={d.members} plans={plans.data?.plans ?? []} open={setMember} />}
     {main === "plans" && <><Title title="Memberships." copy="Names, prices, benefits and access levels are controlled here. Existing provider subscriptions retain their contracted price." /><div className="live-grid">{d.plans.map((p: Plan) => <PlanEditor key={`${p.id}-${p.updated_at}`} plan={p} act={act} busy={busy} />)}</div></>}
     {main === "payments" && <><Title title="Payments." copy="Verified provider payments only. Complimentary access never creates a payment record." /><Payments payments={d.payments} billing={d.billing} onRefresh={() => void result.refresh()} /></>}
@@ -313,6 +345,85 @@ export function Studio({ view = "overview" }: { view?: string }) {
           razorpayReady={Boolean(d?.billing?.ready)}
           onPaymentCreated={() => void result.refresh()}
         />
+      </DialogContent>
+    </Dialog>
+    <Dialog open={downloadModalOpen} onOpenChange={setDownloadModalOpen}>
+      <DialogContent className="live-dialog" style={{ maxWidth: 640, maxHeight: "90vh", overflowY: "auto", padding: 24 }}>
+        <DialogHeader>
+          <DialogTitle style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Download size={20} style={{ color: "#10b981" }} /> Download Nina Kurain Applications ({APP_VERSION_DISPLAY})
+          </DialogTitle>
+          <DialogDescription>
+            Download the latest official native APKs and iOS configuration profiles for uninterrupted mobile access.
+          </DialogDescription>
+        </DialogHeader>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 16 }}>
+          <div style={{ padding: 16, borderRadius: 10, background: "rgba(212, 59, 96, 0.08)", border: "1px solid rgba(212, 59, 96, 0.3)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <strong>Nina Kurain Creator Studio (Android APK)</strong>
+              <span style={{ fontSize: 11, background: "#d43b60", color: "#fff", padding: "2px 8px", borderRadius: 12, fontWeight: 700 }}>{APP_VERSION_DISPLAY} LATEST</span>
+            </div>
+            <p style={{ fontSize: 12.5, color: "#cbd5e1", margin: "4px 0 12px" }}>
+              Dedicated mobile app for creator administration, photo &amp; reel studio editor, live post creation, and subscriber management.
+            </p>
+            <a href="/downloads/NinaKurainStudio.apk" download="NinaKurainStudio.apk" className="button" style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "linear-gradient(135deg, #d43b60 0%, #a92f49 100%)", color: "#fff" }}>
+              <Download size={15} /> Download Creator Studio APK (NinaKurainStudio.apk)
+            </a>
+          </div>
+
+          <div style={{ padding: 16, borderRadius: 10, background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <strong>Nina Kurain VIP Member App (Android APK)</strong>
+              <span style={{ fontSize: 11, background: "#10b981", color: "#000", padding: "2px 8px", borderRadius: 12, fontWeight: 700 }}>{APP_VERSION_DISPLAY} LATEST</span>
+            </div>
+            <p style={{ fontSize: 12.5, color: "#cbd5e1", margin: "4px 0 12px" }}>
+              Exclusive mobile app for VIP members with hardware-accelerated DRM screenshot prevention, encrypted video streams, and vault access.
+            </p>
+            <a href="/downloads/NinaKurain.apk" download="NinaKurain.apk" className="button" style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", color: "#000", fontWeight: 700 }}>
+              <Download size={15} /> Download VIP Member APK (NinaKurain.apk)
+            </a>
+          </div>
+
+          <div style={{ padding: 16, borderRadius: 10, background: "rgba(224, 72, 108, 0.08)", border: "1px solid rgba(224, 72, 108, 0.3)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <strong>Nina Studio for iOS (Creator App)</strong>
+              <span style={{ fontSize: 11, background: "#d43b60", color: "#fff", padding: "2px 8px", borderRadius: 12, fontWeight: 700 }}>iOS CREATOR {APP_VERSION_DISPLAY}</span>
+            </div>
+            <p style={{ fontSize: 12.5, color: "#cbd5e1", margin: "4px 0 12px" }}>
+              Tailored for creator administration on iPhone &amp; iPad. Full camera, microphone, and photo library access enabled for direct media uploads.
+            </p>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <a href="/downloads/NinaKurainStudio.mobileconfig" download="NinaKurainStudio.mobileconfig" className="button" style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "linear-gradient(135deg, #d43b60 0%, #a92f49 100%)", color: "#fff" }}>
+                <Apple size={15} /> Install Studio iOS Profile (.mobileconfig)
+              </a>
+              <a href="/downloads/NinaKurainStudio.ipa" download="NinaKurainStudio.ipa" className="button quiet-button" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Download size={15} /> Download Studio IPA (.ipa)
+              </a>
+            </div>
+          </div>
+
+          <div style={{ padding: 16, borderRadius: 10, background: "rgba(56, 189, 248, 0.08)", border: "1px solid rgba(56, 189, 248, 0.3)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <strong>Nina Kurain VIP Member App (iOS)</strong>
+              <span style={{ fontSize: 11, background: "#38bdf8", color: "#000", padding: "2px 8px", borderRadius: 12, fontWeight: 700 }}>iOS MEMBER {APP_VERSION_DISPLAY}</span>
+            </div>
+            <p style={{ fontSize: 12.5, color: "#cbd5e1", margin: "4px 0 12px" }}>
+              Official iPhone &amp; iPad member portal with screenshot protection, encrypted media viewing, and profile media picker permissions.
+            </p>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <a href="/downloads/NinaKurain.mobileconfig" download="NinaKurain.mobileconfig" className="button quiet-button" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Apple size={15} /> Install Member Profile (.mobileconfig)
+              </a>
+              <a href="/downloads/NinaKurain.ipa" download="NinaKurain.ipa" className="button quiet-button" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Download size={15} /> Download Member IPA (.ipa)
+              </a>
+            </div>
+          </div>
+
+          <div style={{ padding: 12, borderRadius: 8, background: "rgba(255,255,255,0.03)", fontSize: 12, color: "#9ca3af" }}>
+            💡 <em>Android installation note:</em> If prompted, allow "Install from Unknown Sources" in your browser settings to complete installation of the APK file.
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   </main>;

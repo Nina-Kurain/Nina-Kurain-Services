@@ -55,10 +55,7 @@
   .live-admin .demo-topbar .header-actions { flex-shrink: 0; gap: 8px !important; }
   .live-admin .admin-mobile-nav { display: none !important; }
   .live-admin .demo-topbar .live-drawer-nav {
-    display: block !important; width: 100%; min-height: 44px;
-    padding: 8px 12px; border-radius: 10px;
-    border: 1px solid var(--ag-line-strong); background: var(--ag-surface);
-    color: var(--ag-text); font-size: 16px;
+    display: none !important;
   }
   .live-admin .demo-content { padding: 20px 16px calc(32px + env(safe-area-inset-bottom)) !important; }
   .admin-public-profile { padding: 0 0 24px !important; width: 100%; }
@@ -422,9 +419,7 @@
   }
 
   .live-admin .demo-topbar .live-drawer-nav {
-    width: 100% !important;
-    font-size: 14px !important;
-    min-height: 40px !important;
+    display: none !important;
   }
 }
 
@@ -578,5 +573,63 @@ html[data-theme="light"] .auth-divider::before,
 html[data-theme="light"] .auth-divider::after {
   border-bottom-color: rgba(180, 50, 90, 0.2) !important;
 }
+
+/* ─── Studio Editor Page (/admin/editor) Mobile Alignments ─── */
+@media (max-width: 768px) {
+  .live-admin .demo-page-title {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 24px !important;
+    gap: 16px !important;
+  }
+
+  .live-admin .demo-page-title > div:first-child {
+    width: 100% !important;
+    max-width: 100% !important;
+    text-align: left !important;
+  }
+
+  .live-admin .demo-page-title h1 {
+    font-size: clamp(28px, 7vw, 42px) !important;
+    line-height: 1.15 !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    margin: 8px 0 10px !important;
+  }
+
+  .live-admin .demo-page-title p {
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+    color: var(--ag-text-soft, #b5a4af) !important;
+    word-break: break-word !important;
+    margin: 0 !important;
+  }
+
+  .live-admin .demo-page-title .live-toolbar {
+    width: 100% !important;
+    margin: 0 !important;
+    display: flex !important;
+  }
+
+  .live-admin .demo-page-title .live-toolbar .button,
+  .live-admin .demo-page-title .live-toolbar button {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 44px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    white-space: normal !important;
+    text-align: center !important;
+    font-size: 13px !important;
+    letter-spacing: 0.06em !important;
+    padding: 0 16px !important;
+  }
+}
+
 
 

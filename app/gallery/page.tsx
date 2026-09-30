@@ -4,7 +4,7 @@ import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
 import { PublicPhotosClient } from "@/components/public-photos-client";
 import { getPublicCreatorData } from "@/lib/server/public-data";
-import { NINA_ENTITY, getBreadcrumbListSchema } from "@/lib/seo/nina-entity";
+import { NINA_ENTITY, getBreadcrumbListSchema, getImageObjectSchema } from "@/lib/seo/nina-entity";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +36,7 @@ export default async function GalleryPage() {
     "@graph": [
       {
         "@type": "CollectionPage",
-        "@id": `${pageUrl}/#webpage`,
+        "@id": `${pageUrl}#webpage`,
         url: pageUrl,
         name: `${creatorName} Complete Photo Gallery`,
         description: `Official archive of 58 studio and editorial photographs of ${creatorName}.`,
@@ -46,6 +46,23 @@ export default async function GalleryPage() {
         { name: NINA_ENTITY.name, url: `${NINA_ENTITY.canonicalBase}/` },
         { name: "Photo Gallery", url: pageUrl },
       ]),
+      ...photos.map((photo) =>
+        getImageObjectSchema({
+          id: `${NINA_ENTITY.canonicalBase}/photos/${photo.slug}#image`,
+          url: photo.image,
+          pageUrl: `${NINA_ENTITY.canonicalBase}/photos/${photo.slug}`,
+          name: photo.title,
+          caption: photo.caption,
+          description: photo.description,
+          width: photo.width || 1200,
+          height: photo.height || 1600,
+          datePublished: photo.datePublished || "2026-09-24",
+          creditText: creatorName,
+          copyrightNotice: `© 2026 ${creatorName}. All rights reserved.`,
+          license: `${NINA_ENTITY.canonicalBase}/terms-and-conditions`,
+          acquireLicensePage: `${NINA_ENTITY.canonicalBase}/photos/${photo.slug}`,
+        })
+      ),
     ],
   };
 

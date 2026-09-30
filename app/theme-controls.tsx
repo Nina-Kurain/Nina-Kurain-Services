@@ -6,8 +6,17 @@ import { Monitor, Moon, Sun } from "lucide-react";
 export type ThemeChoice = "system" | "dark" | "light";
 const STORAGE_KEY = "afterglow-theme";
 
+function resolveEffective(choice: ThemeChoice): "light" | "dark" {
+  if (choice === "light") return "light";
+  if (choice === "dark") return "dark";
+  if (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) {
+    return "light";
+  }
+  return "dark";
+}
+
 function applyTheme(choice: ThemeChoice) {
-  const effective = choice === "light" ? "light" : "dark";
+  const effective = resolveEffective(choice);
   document.documentElement.dataset.theme = effective;
   document.documentElement.dataset.themeChoice = choice;
   document.documentElement.style.colorScheme = effective;
@@ -21,18 +30,24 @@ function applyTheme(choice: ThemeChoice) {
 }
 
 function useThemeChoice() {
-  const [choice, setChoiceState] = useState<ThemeChoice>("dark");
+  const [choice, setChoiceState] = useState<ThemeChoice>("system");
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    const initial: ThemeChoice = stored === "light" ? "light" : "dark";
+    const stored = localStorage.getItem(STORAGE_KEY) as ThemeChoice | null;
+    const initial: ThemeChoice = stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
     setChoiceState(initial);
     applyTheme(initial);
     const media = matchMedia("(prefers-color-scheme: light)");
     const syncSystem = () => {
-      const current = (localStorage.getItem(STORAGE_KEY) || "dark") as ThemeChoice;
-      if (current === "system") applyTheme("dark");
+      const current = localStorage.getItem(STORAGE_KEY) as ThemeChoice | null;
+      if (!current || current === "system") {
+        applyTheme("system");
+      }
     };
-    const syncControls = () => setChoiceState((localStorage.getItem(STORAGE_KEY) || "dark") as ThemeChoice);
+    const syncControls = () => {
+      const cur = (localStorage.getItem(STORAGE_KEY) || "system") as ThemeChoice;
+      setChoiceState(cur);
+      applyTheme(cur);
+    };
     media.addEventListener("change", syncSystem);
     addEventListener("afterglow:theme", syncControls);
     return () => {

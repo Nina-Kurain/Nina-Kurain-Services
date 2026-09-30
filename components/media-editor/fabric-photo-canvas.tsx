@@ -104,7 +104,15 @@ export function FabricPhotoCanvas({
     }
   }, []);
 
-  // Initialize Fabric Canvas
+  const [fabricCanvas, setFabricCanvas] = useState<Canvas | null>(null);
+
+  const onCanvasReadyRef = useRef(onCanvasReady);
+  onCanvasReadyRef.current = onCanvasReady;
+
+  const onExportReadyRef = useRef(onExportReady);
+  onExportReadyRef.current = onExportReady;
+
+  // Initialize Fabric Canvas once on mount
   useEffect(() => {
     if (!canvasElRef.current || !containerRef.current) return;
 
@@ -116,17 +124,19 @@ export function FabricPhotoCanvas({
     });
 
     fabricCanvasRef.current = canvas;
-    onCanvasReady?.(canvas);
+    setFabricCanvas(canvas);
+    onCanvasReadyRef.current?.(canvas);
 
     return () => {
       canvas.dispose();
       fabricCanvasRef.current = null;
       fabricImageRef.current = null;
       originalImageRef.current = null;
+      setFabricCanvas(null);
     };
-  }, [onCanvasReady]);
+  }, []);
 
-  // Load Main Image
+  // Load Main Image whenever canvas or sourceUrl changes
   useEffect(() => {
     const canvas = fabricCanvasRef.current;
     if (!canvas || !sourceUrl) return;
@@ -161,7 +171,7 @@ export function FabricPhotoCanvas({
     return () => {
       isCancelled = true;
     };
-  }, [sourceUrl]);
+  }, [fabricCanvas, sourceUrl]);
 
   // Filter application (only re-computes on filter / adjustment changes)
   const applyFilters = useCallback(() => {
@@ -627,8 +637,34 @@ export function FabricPhotoCanvas({
   // Export high-res image blob (matches screen view exactly at 1080p target)
   const exportHighResImage = useCallback(async (): Promise<Blob> => {
     const canvas = fabricCanvasRef.current;
-    const img = fabricImageRef.current;
-    if (!canvas || !img) {
+    let img = fabricImageRef.current;
+    if (!canvas) {
+      throw new Error("Canvas is not ready for export");
+    }
+
+    // Auto-recovery: If image reference is missing, load it dynamically before failing
+    if (!img && sourceUrl) {
+      try {
+        img = await FabricImage.fromURL(sourceUrl, { crossOrigin: "anonymous" });
+        fabricImageRef.current = img;
+        originalImageRef.current = img;
+        img.set({
+          selectable: false,
+          evented: false,
+          originX: "center",
+          originY: "center",
+        });
+        canvas.clear();
+        canvas.add(img);
+        canvas.sendObjectToBack(img);
+        applyFilters();
+        applyTransform();
+      } catch (err) {
+        console.warn("[FabricPhotoCanvas] Fallback image load during export failed:", err);
+      }
+    }
+
+    if (!img) {
       throw new Error("Canvas is not ready for export");
     }
 
@@ -685,12 +721,12 @@ export function FabricPhotoCanvas({
       exportImg.onerror = () => reject(new Error("Failed to render export image"));
       exportImg.src = dataUrl;
     });
-  }, [aspectRatio, adjustments, getNumericRatio]);
+  }, [aspectRatio, adjustments, getNumericRatio, sourceUrl, applyFilters, applyTransform]);
 
   // Provide export function to parent
   useEffect(() => {
-    onExportReady?.(exportHighResImage);
-  }, [onExportReady, exportHighResImage]);
+    onExportReadyRef.current?.(exportHighResImage);
+  }, [exportHighResImage]);
 
   const showGrid = isInteracting || showSafeGuides;
 

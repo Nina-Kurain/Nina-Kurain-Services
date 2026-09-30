@@ -7,6 +7,7 @@ import "../components/media-editor/media-editor.css";
 import "./creator-responsive.css";
 import "./legal.css";
 import "./public-creator.css";
+import "../components/cinematic-intro.css";
 import "@/security/security.css";
 import { AgeGate } from "./age-gate";
 import { ScrollReveal } from "@/components/scroll-reveal";
@@ -14,19 +15,23 @@ import { GoogleAdsenseListener } from "@/components/ads/google-adsense-listener"
 import { SecurityGuard } from "@/security";
 import { MobileAppGate } from "@/security/MobileAppGate";
 import { NINA_ENTITY } from "@/lib/seo/nina-entity";
+import { PullToRefresh } from "@/components/pull-to-refresh";
 
 const themeBootScript = `(function(){try{
-  var t=localStorage.getItem('afterglow-theme')||'dark';
-  var e=(t==='light')?'light':'dark';
+  var t=localStorage.getItem('afterglow-theme');
+  var sysLight=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches;
+  var isLight=(t==='light')||(!t&&sysLight)||(t==='system'&&sysLight);
+  var e=isLight?'light':'dark';
+  var choice=t||'system';
   document.documentElement.dataset.theme=e;
-  document.documentElement.dataset.themeChoice=t;
+  document.documentElement.dataset.themeChoice=choice;
   document.documentElement.style.colorScheme=e;
-  if(e==='dark'){
-    document.documentElement.classList.add('dark');
-    document.documentElement.classList.remove('light');
-  }else{
+  if(e==='light'){
     document.documentElement.classList.add('light');
     document.documentElement.classList.remove('dark');
+  }else{
+    document.documentElement.classList.add('dark');
+    document.documentElement.classList.remove('light');
   }
   var host=(window.location.hostname||'').toLowerCase();
   var isVipHost=host.indexOf('vip.')===0;
@@ -39,17 +44,36 @@ const themeBootScript = `(function(){try{
   document.documentElement.dataset.ageVerified=v?'true':'false';
   document.documentElement.dataset.ageGate=(!isProtectedPath || v)?'closed':'open';
 }catch(_){
-  document.documentElement.dataset.theme='dark';
-  document.documentElement.dataset.themeChoice='dark';
-  document.documentElement.classList.add('dark');
-  document.documentElement.classList.remove('light');
+  var sysLight=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches;
+  var e=sysLight?'light':'dark';
+  document.documentElement.dataset.theme=e;
+  document.documentElement.dataset.themeChoice='system';
+  if(e==='light'){
+    document.documentElement.classList.add('light');
+    document.documentElement.classList.remove('dark');
+  }else{
+    document.documentElement.classList.add('dark');
+    document.documentElement.classList.remove('light');
+  }
   document.documentElement.dataset.ageGate='closed';
   document.documentElement.dataset.ageVerified='false';
 }})();`;
 
 const mediaProtectionScript = `(function(){
   try{
+    function isAdmin(){
+      try{
+        var p=(window.location.pathname||'').toLowerCase();
+        if(p.indexOf('/admin')===0)return true;
+        if(document.cookie.indexOf('nk_admin=1')!==-1)return true;
+        if(document.documentElement.dataset.admin==='true')return true;
+        if(localStorage.getItem('nk_admin_mode')==='true')return true;
+        if(sessionStorage.getItem('nk_admin_mode')==='true')return true;
+      }catch(_){}
+      return false;
+    }
     function block(e){
+      if(isAdmin())return;
       var t=e.target;
       if(t&&(t.tagName==='IMG'||t.tagName==='VIDEO'||t.tagName==='CANVAS'||(t.closest&&t.closest('[data-protected-media],.protected-media-frame,.photo-card-media,.hero-photo,.marquee-item,.post-media,.gallery-item')))){
         e.preventDefault();
@@ -61,7 +85,7 @@ const mediaProtectionScript = `(function(){
       return (typeof window!=='undefined')&&((window.innerWidth<=820)||(/android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent||'')));
     }
     function engageShield(){
-      if(isMobile()) return;
+      if(isAdmin()||isMobile()) return;
       document.documentElement.classList.add('nk-screenshot-shield');
       var toast = document.getElementById('nk-android-system-toast');
       if (toast) { toast.classList.add('is-visible'); }
@@ -80,6 +104,7 @@ const mediaProtectionScript = `(function(){
       },2400);
     }
     window.addEventListener('contextmenu',function(e){
+      if(isAdmin())return;
       var tag=(e.target&&e.target.tagName)||'';
       if(tag!=='INPUT'&&tag!=='TEXTAREA'){
         e.preventDefault();
@@ -92,6 +117,7 @@ const mediaProtectionScript = `(function(){
       var k=e.key,c=e.keyCode||e.which;
       var ctrl=e.ctrlKey||e.metaKey;
       if(k==='PrintScreen'||c===44){
+        if(isAdmin())return;
         e.preventDefault();
         engageShield();
         setTimeout(releaseShield,2500);
@@ -99,20 +125,32 @@ const mediaProtectionScript = `(function(){
       }
       // Mobile Volume Down (Android screenshot) & Volume Up button attempt
       if(k==='VolumeDown'||k==='AudioVolumeDown'||e.code==='VolumeDown'||c===174||c===25||k==='VolumeUp'||k==='AudioVolumeUp'||e.code==='VolumeUp'||c===175||c===24){
+        if(isAdmin())return;
         engageShield();
         setTimeout(releaseShield,3000);
       }
-      if(k==='F12'||c===123){e.preventDefault();engageShield();setTimeout(releaseShield,2000);return false;}
+      if(k==='F12'||c===123){
+        if(isAdmin())return;
+        e.preventDefault();engageShield();setTimeout(releaseShield,2000);return false;
+      }
       if((ctrl||e.metaKey)&&e.shiftKey&&(k==='S'||k==='s'||k==='3'||k==='4'||k==='5')){
+        if(isAdmin())return;
         e.preventDefault();
         engageShield();
         setTimeout(releaseShield,2500);
         return false;
       }
-      if(ctrl&&(k==='u'||k==='U'||k==='s'||k==='S'||k==='p'||k==='P')){e.preventDefault();return false;}
-      if(ctrl&&e.shiftKey&&(k==='I'||k==='i'||k==='J'||k==='j'||k==='C'||k==='c')){e.preventDefault();return false;}
+      if(ctrl&&(k==='u'||k==='U'||k==='s'||k==='S'||k==='p'||k==='P')){
+        if(isAdmin())return;
+        e.preventDefault();return false;
+      }
+      if(ctrl&&e.shiftKey&&(k==='I'||k==='i'||k==='J'||k==='j'||k==='C'||k==='c')){
+        if(isAdmin())return;
+        e.preventDefault();return false;
+      }
     },true);
     window.addEventListener('keyup',function(e){
+      if(isAdmin())return;
       var k=e.key,c=e.keyCode||e.which;
       if(k==='PrintScreen'||c===44||k==='VolumeDown'||e.code==='VolumeDown'||k==='VolumeUp'||e.code==='VolumeUp'||c===174||c===175||c===24||c===25){
         engageShield();
@@ -120,20 +158,52 @@ const mediaProtectionScript = `(function(){
       }
     },true);
     window.addEventListener('blur',function(){
-      if(isMobile()) return;
-      engageShield();
-      setTimeout(releaseShield,2600);
+      // Do not engage blackout on blur to prevent blank screens when user switches apps or tabs
     });
     window.addEventListener('focus',releaseShield);
     window.addEventListener('pagehide',function(){
-      if(!isMobile()) engageShield();
+      if(!isAdmin()&&!isMobile()) engageShield();
     });
     document.addEventListener('visibilitychange',function(){
-      if(isMobile()) return;
+      if(isAdmin()||isMobile()) return;
       if(document.visibilityState==='hidden'){engageShield();}
       else{setTimeout(releaseShield,2000);}
     });
   }catch(_){}
+})();`;
+
+import { CURRENT_REQUIRED_APP_VERSION } from "@/lib/app-version";
+
+const appVersionLockScript = `(function(){
+  try {
+    var reqV = "${CURRENT_REQUIRED_APP_VERSION}";
+    var ua = navigator.userAgent || '';
+    var isApp = /NinaKurainApp/i.test(ua);
+    var m = ua.match(/NinaKurainApp\\/([0-9]+(?:\\.[0-9]+)*)/i);
+    var clientV = m ? m[1] : (isApp ? '1.0.0' : null);
+
+    function cmp(v1, v2) {
+      var p1 = (v1 || '').split('.').map(function(n) { return parseInt(n, 10) || 0; });
+      var p2 = (v2 || '').split('.').map(function(n) { return parseInt(n, 10) || 0; });
+      var len = Math.max(p1.length, p2.length, 3);
+      for (var i = 0; i < len; i++) {
+        var n1 = p1[i] || 0;
+        var n2 = p2[i] || 0;
+        if (n1 > n2) return 1;
+        if (n1 < n2) return -1;
+      }
+      return 0;
+    }
+
+    if (isApp && (clientV === null || cmp(clientV, reqV) < 0)) {
+      document.documentElement.classList.add('nk-outdated-app');
+      document.documentElement.dataset.outdatedApp = 'true';
+      var st = document.createElement('style');
+      st.id = 'nk-outdated-shield';
+      st.innerHTML = 'body > *:not(#nk-vip-update-gate):not(#nk-vip-mobile-gate) { display: none !important; } html, body { overflow: hidden !important; height: 100% !important; background: #070306 !important; }';
+      document.head.appendChild(st);
+    }
+  } catch(_) {}
 })();`;
 
 export const metadata: Metadata = {
@@ -242,9 +312,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         />
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         <script dangerouslySetInnerHTML={{ __html: mediaProtectionScript }} />
+        <script dangerouslySetInnerHTML={{ __html: appVersionLockScript }} />
       </head>
       <body>
         <SecurityGuard />
+        <PullToRefresh />
         <GoogleAdsenseListener />
         <ScrollReveal />
         <AgeGate />

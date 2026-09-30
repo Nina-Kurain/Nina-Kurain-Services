@@ -7,17 +7,35 @@ function blockMediaAction(event: SyntheticEvent) {
 }
 
 export const ProtectedVideo = forwardRef<HTMLVideoElement, VideoHTMLAttributes<HTMLVideoElement>>(
-  function ProtectedVideo(props, ref) {
+  function ProtectedVideo({ playsInline = true, src, onLoadedMetadata, ...props }, ref) {
+    const finalSrc =
+      typeof src === "string" && src && !src.includes("#") && props.muted && !props.controls
+        ? `${src}#t=0.001`
+        : src;
+
+    const handleLoadedMetadata = (e: SyntheticEvent<HTMLVideoElement>) => {
+      const v = e.currentTarget;
+      if (v.muted && !v.autoplay && v.currentTime === 0) {
+        try {
+          v.currentTime = 0.001;
+        } catch (_) {}
+      }
+      onLoadedMetadata?.(e);
+    };
+
     return (
       <video
         ref={ref}
-        {...props}
+        playsInline={playsInline}
+        src={finalSrc}
+        onLoadedMetadata={handleLoadedMetadata}
         controlsList="nodownload nofullscreen noremoteplayback"
         disablePictureInPicture
         disableRemotePlayback
         draggable={false}
         onContextMenu={blockMediaAction}
         onDragStart={blockMediaAction}
+        {...props}
       />
     );
   }
@@ -28,6 +46,7 @@ export const ProtectedImage = forwardRef<HTMLImageElement, ImgHTMLAttributes<HTM
     return (
       <img
         ref={ref}
+        alt={props.alt || ""}
         {...props}
         draggable={false}
         onContextMenu={blockMediaAction}

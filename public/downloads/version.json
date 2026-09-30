@@ -1,0 +1,69 @@
+{
+  "latest": {
+    "version": "2.1.0",
+    "versionCode": 3,
+    "releaseDate": "2026-09-27",
+    "requiredVersion": "2.1.0",
+    "requiredVersionCode": 3,
+    "alwaysRequireLatest": true,
+    "mandatoryUpdate": true,
+    "updateMessage": "The latest version (v2.1.0) is required to access Nina Kurain VIP and Studio. Older versions are retired.",
+    "apps": {
+      "member_android": {
+        "name": "Nina Kurain VIP (Android)",
+        "packageName": "com.ninakurain.services",
+        "version": "2.1.0",
+        "versionCode": 3,
+        "downloadUrl": "/downloads/NinaKurain.apk",
+        "file": "NinaKurain.apk",
+        "type": "apk"
+      },
+      "admin_android": {
+        "name": "Nina Kurain Creator Studio (Android)",
+        "packageName": "com.ninakurain.services.studio",
+        "version": "2.1.0",
+        "versionCode": 3,
+        "downloadUrl": "/downloads/NinaKurainStudio.apk",
+        "file": "NinaKurainStudio.apk",
+        "type": "apk"
+      },
+
+      "ios_profile": {
+        "name": "Nina Kurain VIP (iOS WebClip Profile)",
+        "identifier": "in.ninakurainservices.vip.profile",
+        "version": "2.1.0",
+        "payloadVersion": 3,
+        "downloadUrl": "/downloads/NinaKurain.mobileconfig",
+        "file": "NinaKurain.mobileconfig",
+        "type": "mobileconfig"
+      },
+      "ios_ipa": {
+        "name": "Nina Kurain VIP (iOS AltStore / Scarlet IPA)",
+        "bundleId": "com.ninakurain.services",
+        "version": "2.1.0",
+        "build": 3,
+        "downloadUrl": "/downloads/NinaKurain.ipa",
+        "file": "NinaKurain.ipa",
+        "type": "ipa"
+      },
+      "admin_ios_profile": {
+        "name": "Nina Studio (iOS WebClip Profile)",
+        "identifier": "in.ninakurainservices.studio.profile",
+        "version": "2.1.0",
+        "payloadVersion": 3,
+        "downloadUrl": "/downloads/NinaKurainStudio.mobileconfig",
+        "file": "NinaKurainStudio.mobileconfig",
+        "type": "mobileconfig"
+      },
+      "admin_ios_ipa": {
+        "name": "Nina Studio (iOS AltStore / Scarlet IPA)",
+        "bundleId": "com.ninakurain.studio",
+        "version": "2.1.0",
+        "build": 3,
+        "downloadUrl": "/downloads/NinaKurainStudio.ipa",
+        "file": "NinaKurainStudio.ipa",
+        "type": "ipa"
+      }
+    }
+  }
+}

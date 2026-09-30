@@ -3,7 +3,13 @@ import { row,rows,HttpError,setting } from "./db";
 import { accessClause,assertVerified,entitlement,type ContentPost,type ContentMedia } from "./entitlements";
 import type { Account } from "./auth";
 export async function mediaSignature(value:string){if(!env.MEDIA_SIGNING_SECRET)throw new HttpError(503,"Media access is not configured.");const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(env.MEDIA_SIGNING_SECRET),{name:"HMAC",hash:"SHA-256"},false,["sign"]);return Buffer.from(await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(value))).toString("hex");}
-export async function mediaUrl(user:Account,asset:string,post:string,admin=false,preview=false){const expires=Math.floor(Date.now()/(4*60000))*4*60000+5*60000;const signature=await mediaSignature(`${user.id}:${user.session_hash}:${asset}:${post}:${expires}:${admin}:${preview}`);return `/api/content/media/${asset}?post=${encodeURIComponent(post)}&expires=${expires}&sig=${signature}${admin?"&admin=1":""}${preview?"&preview=1":""}`;}
+export async function mediaUrl(user:Account,asset:string,post:string,admin=false,preview=false){
+  const expires = admin
+    ? Date.now() + 86400000 // 24 hours for admin studio & editing workflows
+    : Math.floor(Date.now()/(4*60000))*4*60000+5*60000;
+  const signature = await mediaSignature(`${user.id}:${user.session_hash}:${asset}:${post}:${expires}:${admin}:${preview}`);
+  return `/api/content/media/${asset}?post=${encodeURIComponent(post)}&expires=${expires}&sig=${signature}${admin?"&admin=1":""}${preview?"&preview=1":""}`;
+}
 export async function creatorAvatarUrl(user:Account){const asset=await setting("creator_avatar_asset_id","");return asset?mediaUrl(user,asset,"profile"):"/creator-portrait.png";}
 export async function attachMedia(user:Account,posts:ContentPost[],admin=false){
   if(!posts.length)return posts;
@@ -35,14 +41,22 @@ export async function attachMedia(user:Account,posts:ContentPost[],admin=false){
 export async function verifyMedia(user:Account,assetId:string,url:URL,admin:boolean){
   const post=url.searchParams.get("post")??"",expires=Number(url.searchParams.get("expires"));
   const isPreview=url.searchParams.get("preview")==="1";
+
+  // Dedicated admin studio access: verified admin session permits access to studio assets
+  if(admin){
+    if(user.role!=="admin")throw new HttpError(403,"Admin privileges required.");
+    const asset=await row<{storage_key:string;mime:string;bytes:number}>("SELECT storage_key,mime,bytes FROM media_assets WHERE id=?",assetId);
+    if(!asset)throw new HttpError(404,"Media unavailable.");
+    return asset;
+  }
+
   if(!Number.isFinite(expires)||expires<Date.now()||expires>Date.now()+6*60000)throw new HttpError(403,"Media link expired. Refresh the feed.");
   const signature=await mediaSignature(`${user.id}:${user.session_hash}:${assetId}:${post}:${expires}:${admin}:${isPreview}`),supplied=url.searchParams.get("sig")??"";
   let diff=signature.length^supplied.length;for(let i=0;i<signature.length;i++)diff|=signature.charCodeAt(i)^(supplied.charCodeAt(i)||0);
   if(diff)throw new HttpError(403,"Media access denied.");
   type Asset={storage_key:string;mime:string;bytes:number};
   let asset:Asset|null;
-  if(admin)asset=await row<Asset>("SELECT storage_key,mime,bytes FROM media_assets WHERE id=?",assetId);
-  else if(post==="profile")asset=await row<Asset>("SELECT ma.storage_key,ma.mime,ma.bytes FROM media_assets ma JOIN site_settings s ON s.key='creator_avatar_asset_id' AND s.value=ma.id WHERE ma.id=?",assetId);
+  if(post==="profile")asset=await row<Asset>("SELECT ma.storage_key,ma.mime,ma.bytes FROM media_assets ma JOIN site_settings s ON s.key='creator_avatar_asset_id' AND s.value=ma.id WHERE ma.id=?",assetId);
   else if(isPreview){
     // Verified preview thumbnail for published posts (allows CSS blur preview)
     const now=Date.now();

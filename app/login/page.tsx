@@ -14,11 +14,7 @@ export const metadata = {
 export default async function Page() {
   const user = await currentUser();
   if (user) {
-    if (user.role === "admin") {
-      redirect("/admin");
-    } else {
-      redirect("/feed");
-    }
+    redirect(user.role === "admin" ? "/admin" : "/feed");
   }
   return <AuthForm mode="login" />;
 }

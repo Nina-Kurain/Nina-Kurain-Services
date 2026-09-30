@@ -1,22 +1,198 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.ninakurain.services">
 
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- NETWORK & CONNECTIVITY                                             -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- STORAGE & MEDIA ACCESS                                             -->
+    <!-- Legacy storage (Android 9 and below)                               -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+
+    <!-- Scoped media access (Android 13+ / API 33+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+
+    <!-- Partial media access (Android 14+ / API 34+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- CAMERA & MICROPHONE                                                -->
+    <!-- Required for: photo uploads, video recording, creator studio       -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- DOWNLOADS & PACKAGE INSTALLATION                                   -->
+    <!-- Required for: APK self-update, file downloads                      -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- NOTIFICATIONS (Android 13+ / API 33+)                              -->
+    <!-- Required for: download notifications, subscription alerts          -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- DEVICE & SYSTEM                                                    -->
+    <!-- Required for: media playback, haptic feedback, biometric login     -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- PACKAGE VISIBILITY QUERIES (Android 11+ / API 30+)                 -->
+    <!-- Required for: UPI payments, social deep links, browser handoff     -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <queries>
+        <!-- Razorpay & UPI Payment Apps -->
+        <package android:name="com.google.android.apps.nbu.paisa.user" /> <!-- Google Pay -->
+        <package android:name="com.phonepe.app" />
+        <package android:name="net.one97.paytm" />
+        <package android:name="in.org.npci.upiapp" /> <!-- BHIM -->
+        <package android:name="com.whatsapp" />
+        <package android:name="com.myairtelapp" /> <!-- Airtel Payments -->
+        <package android:name="com.upi.axispay" />
+        <package android:name="com.csam.icici.bank.imobile" />
+        <package android:name="com.freecharge" />
+        <package android:name="com.dreamplug.androidapp" /> <!-- CRED -->
+        <package android:name="in.amazon.mShop.android.shopping" />
+        <package android:name="com.mobikwik_new" />
+
+        <!-- Social Media & External Deep Link Apps -->
+        <package android:name="com.instagram.android" />
+        <package android:name="com.instagram.lite" />
+        <package android:name="org.telegram.messenger" />
+        <package android:name="com.twitter.android" />
+        <package android:name="com.google.android.youtube" />
+        <package android:name="com.pinterest" />
+        <package android:name="com.facebook.katana" />
+        <package android:name="com.snapchat.android" />
+
+        <!-- Browsers for APK download fallback -->
+        <package android:name="com.android.chrome" />
+        <package android:name="com.google.android.browser" />
+        <package android:name="org.mozilla.firefox" />
+        <package android:name="com.brave.browser" />
+        <package android:name="com.opera.browser" />
+        <package android:name="com.microsoft.emmx" /> <!-- Edge -->
+        <package android:name="com.sec.android.app.sbrowser" /> <!-- Samsung Browser -->
+
+        <!-- Email apps -->
+        <package android:name="com.google.android.gm" /> <!-- Gmail -->
+        <package android:name="com.microsoft.office.outlook" />
+
+        <!-- File manager for downloads -->
+        <package android:name="com.google.android.documentsui" />
+
+        <!-- Intent queries for system integration -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="upi" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="instagram" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="whatsapp" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="tg" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="mailto" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="tel" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" android:mimeType="application/vnd.android.package-archive" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="market" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="mailto" />
+        </intent>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+        <intent>
+            <action android:name="android.media.action.VIDEO_CAPTURE" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.GET_CONTENT" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.PICK" />
+        </intent>
+    </queries>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- APPLICATION                                                        -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
     <application
         android:allowBackup="false"
-        android:label="@string/app_name"
+        android:label="${appName}"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.NinaKurainSecure">
+        android:usesCleartextTraffic="false"
+        android:hardwareAccelerated="true"
+        android:largeHeap="true"
+        android:requestLegacyExternalStorage="true"
+        android:theme="@style/Theme.NinaKurainSecure"
+        tools:targetApi="34">
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:configChanges="orientation|screenSize|keyboardHidden"
-            android:screenOrientation="portrait">
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|keyboard|navigation|uiMode|density|fontScale|layoutDirection|locale|mcc|mnc|touchscreen"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

@@ -44,13 +44,16 @@ export function MediaStudioTriggerBanner({
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div className="media-studio-trigger-action" style={{ display: "flex", alignItems: "center", gap: 8, width: "100%" }}>
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,video/mp4"
+          accept="image/*,video/*,.mp4,.mov,.webm,.m4v,.jpeg,.jpg,.png,.webp"
           multiple
           style={{ display: "none" }}
+          onClick={(e) => {
+            (e.target as HTMLInputElement).value = "";
+          }}
           onChange={handleFiles}
         />
         <button

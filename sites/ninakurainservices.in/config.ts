@@ -28,8 +28,13 @@ export const PUBLIC_SITE_CONFIG = {
     },
     downloads: {
       androidApk: "/downloads/NinaKurain.apk",
+      adminAndroidApk: "/downloads/NinaKurainStudio.apk",
       iosIpa: "/downloads/NinaKurain.ipa",
+      adminIosIpa: "/downloads/NinaKurainStudio.ipa",
+      iosProfile: "/downloads/NinaKurain.mobileconfig",
+      adminIosProfile: "/downloads/NinaKurainStudio.mobileconfig",
       iosManifest: "/downloads/manifest.plist",
+      adminIosManifest: "/downloads/manifest-studio.plist",
     }
   }
 } as const;

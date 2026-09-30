@@ -28,7 +28,7 @@ export function isIOSClient(): boolean {
     ua.includes("iphone") ||
     ua.includes("ipad") ||
     ua.includes("ipod") ||
-    ua.includes("ninakurainapp/1.0 (ios") ||
+    (ua.includes("ninakurainapp") && ua.includes("ios")) ||
     ua.includes("ios; securenative") ||
     search.includes("platform=ios")
   );

@@ -76,6 +76,13 @@ next-env.d.ts
 # Checkout-local execution profile and tool state; never publish them.
 /.sites-runtime/
 /.agents/
+/__agent__/
 /scratch/
 /outputs/
 /work/
+
+# Android build outputs and intermediate caches
+android/app/build/
+android/.gradle/
+.gradle/
+*.apk.idsig

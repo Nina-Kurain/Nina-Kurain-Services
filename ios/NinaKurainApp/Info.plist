@@ -17,9 +17,9 @@
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.0</string>
+	<string>2.1.0</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>3</string>
 	<key>CFBundleIcons</key>
 	<dict>
 		<key>CFBundlePrimaryIcon</key>
@@ -34,11 +34,96 @@
 	</dict>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- NETWORK SECURITY                                        -->
+	<!-- ════════════════════════════════════════════════════════ -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<true/>
+		<key>NSAllowsArbitraryLoadsForMedia</key>
+		<true/>
 	</dict>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- CAMERA & MEDIA CAPTURE PERMISSIONS                      -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>NSCameraUsageDescription</key>
+	<string>Nina Kurain VIP requires camera access to take photos and record videos directly in the app.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Nina Kurain VIP requires microphone access to record audio when recording videos.</string>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- PHOTO LIBRARY PERMISSIONS                               -->
+	<!-- Required for: media uploads, saving content             -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Nina Kurain VIP requires access to your photo library to select photos and videos for your profile and comments.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Nina Kurain VIP requires permission to save photos and media to your photo library.</string>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- MEDIA LIBRARY PERMISSION (Apple Music integration)      -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>NSAppleMusicUsageDescription</key>
+	<string>Nina Kurain VIP would like to access your media library for background music in video playback.</string>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- FACE ID / BIOMETRIC AUTHENTICATION                      -->
+	<!-- Required for: secure login, session protection           -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>Nina Kurain VIP uses Face ID for secure and quick authentication to protect your private content.</string>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- LOCATION (optional, for geo-tagged content)             -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Nina Kurain VIP may use your location to personalize content and experiences.</string>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- CONTACTS (optional, for invites and referrals)          -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>NSContactsUsageDescription</key>
+	<string>Nina Kurain VIP may access your contacts to help you invite friends and share exclusive content.</string>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- LOCAL NETWORK DISCOVERY (Bonjour, AirPlay, Casting)    -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Nina Kurain VIP uses the local network for media casting and AirPlay streaming.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_airplay._tcp</string>
+	</array>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- FILE DOCUMENT ACCESS (saving/loading documents)        -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>UISupportsDocumentBrowser</key>
+	<true/>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- BACKGROUND MODES                                        -->
+	<!-- Required for: media playback, downloads, fetch          -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>fetch</string>
+		<string>processing</string>
+	</array>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- DEVICE CAPABILITIES & UI                                -->
+	<!-- ════════════════════════════════════════════════════════ -->
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>
@@ -58,5 +143,47 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- URL SCHEMES (deep linking)                              -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>ninakurain</string>
+				<string>ninakurainvip</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>in.ninakurainservices.app</string>
+		</dict>
+	</array>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- QUERIED URL SCHEMES (checking if apps are installed)   -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>instagram</string>
+		<string>instagram-stories</string>
+		<string>whatsapp</string>
+		<string>tg</string>
+		<string>twitter</string>
+		<string>fb</string>
+		<string>youtube</string>
+		<string>pinterest</string>
+		<string>mailto</string>
+		<string>tel</string>
+		<string>sms</string>
+		<string>itms-services</string>
+		<string>itms-apps</string>
+	</array>
+
+	<!-- ════════════════════════════════════════════════════════ -->
+	<!-- APP TRACKING TRANSPARENCY (iOS 14.5+)                  -->
+	<!-- ════════════════════════════════════════════════════════ -->
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Nina Kurain VIP may use tracking to deliver personalized content and advertisements.</string>
 </dict>
 </plist>

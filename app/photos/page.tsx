@@ -6,6 +6,7 @@ import { getPublicCreatorData } from "@/lib/server/public-data";
 import { ArrowRight } from "lucide-react";
 import { PublicPhotosClient } from "@/components/public-photos-client";
 import { NINA_ENTITY, getBreadcrumbListSchema, getImageObjectSchema } from "@/lib/seo/nina-entity";
+import { getLookByIdOrSlug } from "@/lib/looks-data";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function PhotosPage() {
+export default async function PhotosPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ look?: string; category?: string }> | { look?: string; category?: string };
+}) {
+  const resolvedParams = searchParams ? await Promise.resolve(searchParams) : {};
+  const currentLook = getLookByIdOrSlug(resolvedParams.look);
+
   const { photos, settings } = await getPublicCreatorData();
   const creatorName = settings?.name || NINA_ENTITY.name;
 
@@ -53,8 +61,12 @@ export default async function PhotosPage() {
         "@type": "CollectionPage",
         "@id": `${NINA_ENTITY.canonicalBase}/photos/#webpage`,
         url: `${NINA_ENTITY.canonicalBase}/photos`,
-        name: `${creatorName} Photos | Official Gallery`,
-        description: `Official photography collection of ${creatorName}, Digital Creator.`,
+        name: currentLook
+          ? `${currentLook.num} · ${currentLook.title} | ${creatorName}`
+          : `${creatorName} Photos | Official Gallery`,
+        description: currentLook
+          ? currentLook.desc
+          : `Official photography collection of ${creatorName}, Digital Creator.`,
         about: {
           "@id": NINA_ENTITY.id,
         },
@@ -62,12 +74,13 @@ export default async function PhotosPage() {
       getBreadcrumbListSchema([
         { name: NINA_ENTITY.name, url: `${NINA_ENTITY.canonicalBase}/` },
         { name: "Photos", url: `${NINA_ENTITY.canonicalBase}/photos` },
+        ...(currentLook ? [{ name: currentLook.title, url: `${NINA_ENTITY.canonicalBase}/photos?look=${currentLook.slug}` }] : []),
       ]),
       ...photos
         .filter((p) => !p.image.startsWith("/nina-kurain") && !p.image.startsWith("/seductive"))
         .map((photo) =>
           getImageObjectSchema({
-            id: `${NINA_ENTITY.canonicalBase}/photos/${photo.slug}/#image`,
+            id: `${NINA_ENTITY.canonicalBase}/photos/${photo.slug}#image`,
             url: photo.image,
             pageUrl: `${NINA_ENTITY.canonicalBase}/photos/${photo.slug}`,
             name: photo.title,
@@ -97,23 +110,36 @@ export default async function PhotosPage() {
         <section className="public-section" style={{ paddingTop: "40px" }}>
           <div className="section-head">
             <div className="section-head-copy">
-              <span className="section-kicker">OFFICIAL PHOTOGRAPHY ARCHIVE</span>
-              <h1 style={{ fontSize: "clamp(38px, 5vw, 64px)", margin: "0 0 14px", fontFamily: "var(--nk-font-serif)" }}>
-                {creatorName} Photography
+              <span className="section-kicker">
+                {currentLook
+                  ? `ARCHIVAL LOOKBOOK · ${currentLook.num.toUpperCase()}`
+                  : "OFFICIAL PHOTOGRAPHY ARCHIVE"}
+              </span>
+              <h1 style={{ fontSize: "clamp(34px, 4.8vw, 60px)", margin: "0 0 14px", fontFamily: "var(--nk-font-serif)" }}>
+                {currentLook ? `${currentLook.num}: ${currentLook.title}` : `${creatorName} Photography`}
               </h1>
               <p>
-                The canonical visual repository of {creatorName}. Explore high-resolution editorial portraiture,
-                studio lighting studies, and fine-art fashion photography.
+                {currentLook
+                  ? currentLook.desc
+                  : `The canonical visual repository of ${creatorName}. Explore high-resolution editorial portraiture, studio lighting studies, and fine-art fashion photography.`}
               </p>
             </div>
             <div className="gallery-meta-count">
               <span style={{ fontSize: "12px", color: "var(--nk-rose-light)", fontWeight: 700, letterSpacing: "0.12em" }}>
-                {photos.length > 0 ? `${photos.length} WORKS AVAILABLE` : "STUDIO CURATION"}
+                {currentLook
+                  ? `${currentLook.expectedCount} FRAMES IN SUITE`
+                  : photos.length > 0
+                  ? `${photos.length} WORKS AVAILABLE`
+                  : "STUDIO CURATION"}
               </span>
             </div>
           </div>
 
-          <PublicPhotosClient photos={photos} creatorName={creatorName} />
+          <PublicPhotosClient
+            photos={photos}
+            creatorName={creatorName}
+            initialLook={currentLook?.slug}
+          />
         </section>
 
         {/* Informative Context for Image Usage / Licensing */}

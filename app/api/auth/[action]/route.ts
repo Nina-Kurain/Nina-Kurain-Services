@@ -1,10 +1,10 @@
 import { env } from "cloudflare:workers";
 import { z } from "zod";
-import { apiAccount, clearSession, createSession, rateLimit, purgeExpiredUnverifiedUsers } from "@/lib/server/auth";
+import { apiAccount, clearSession, createSession, currentUser, rateLimit, purgeExpiredUnverifiedUsers } from "@/lib/server/auth";
 import { hashPassword, verifyPassword, digest } from "@/lib/server/password";
 import { body, database, endpoint, HttpError, json, row, run, sameOrigin, sql } from "@/lib/server/db";
 import { initializePlans } from "@/lib/server/entitlements";
-import { sendAccountEmail, emailReady, safelySendTransactionalEmail } from "@/lib/server/email";
+import { sendAccountEmail, emailReady, safelySendTransactionalEmail, sendAdminOtpEmail } from "@/lib/server/email";
 import { validateAuthenticEmail } from "@/lib/server/email-validator";
 import { trackReferralSignup } from "@/lib/server/referrals";
 
@@ -21,6 +21,9 @@ const signup = credentials
     confirmPassword: z.string(),
     password: z.string().min(12, "Use at least 12 characters").max(128),
     referralCode: z.string().trim().max(50).optional().nullable(),
+    termsAccepted: z.preprocess(v=>v===true||v==="true"||v==="on"||v===1||v==="1",z.boolean()).refine(Boolean, "You must accept the Terms and Conditions."),
+    privacyAccepted: z.preprocess(v=>v===true||v==="true"||v==="on"||v===1||v==="1",z.boolean()).refine(Boolean, "You must accept the Privacy Policy."),
+    adultConfirmed: z.preprocess(v=>v===true||v==="true"||v==="on"||v===1||v==="1",z.boolean()).refine(Boolean, "You must confirm that you are 18 or older."),
   })
   .refine((v) => v.password === v.confirmPassword, { message: "Passwords do not match" });
 
@@ -34,6 +37,15 @@ export async function GET(request: Request, ctx: { params: Promise<{ action: str
         Location: action === "admin-logout" ? "/admin/login" : "/login",
         "Cache-Control": "no-store",
       },
+    });
+  }
+  if (action === "status") {
+    const admin = await currentUser(true);
+    const member = admin ? null : await currentUser(false);
+    return json({
+      isAdmin: Boolean(admin),
+      role: admin ? "admin" : (member?.role ?? "guest"),
+      authenticated: Boolean(admin || member),
     });
   }
   return new Response("Not found", { status: 404 });
@@ -50,6 +62,9 @@ export async function POST(request: Request, ctx: { params: Promise<{ action: st
       if (raw.length > 65536) throw new HttpError(413, "Request too large");
       input = Object.fromEntries(new URLSearchParams(raw));
       input.remember = input.remember === "on" || input.remember === "true";
+      input.termsAccepted = input.termsAccepted === "on" || input.termsAccepted === "true";
+      input.privacyAccepted = input.privacyAccepted === "on" || input.privacyAccepted === "true";
+      input.adultConfirmed = input.adultConfirmed === "on" || input.adultConfirmed === "true";
     } else {
       input = await body(request);
     }
@@ -113,14 +128,17 @@ export async function POST(request: Request, ctx: { params: Promise<{ action: st
             now
           ),
           sql("INSERT INTO profiles(user_id, updated_at) VALUES(?, ?)", id, now),
-          sql("INSERT INTO memberships(user_id, updated_at) VALUES(?, ?)", id, now),
+            sql("INSERT INTO memberships(user_id, updated_at) VALUES(?, ?)", id, now),
+            sql("INSERT INTO legal_acceptances(id,user_id,document_type,document_version,purpose,accepted_at) VALUES(?,?,?,?,?,?)", crypto.randomUUID(), id, "terms", "4.0.0", "account_signup", now),
+            sql("INSERT INTO legal_acceptances(id,user_id,document_type,document_version,purpose,accepted_at) VALUES(?,?,?,?,?,?)", crypto.randomUUID(), id, "privacy", "3.0.0", "account_signup", now),
+            sql("INSERT INTO legal_acceptances(id,user_id,document_type,document_version,purpose,accepted_at) VALUES(?,?,?,?,?,?)", crypto.randomUUID(), id, "adult_age_confirmation", "1.0.0", "age_assurance", now),
         ]);
       } catch (e) {
         if (String(e).includes("UNIQUE")) throw new HttpError(409, "Email already registered.");
         throw e;
       }
 
-      await createSession(id, false, Boolean(v.remember));
+      const token = await createSession(id, false, Boolean(v.remember));
 
       const cookieHeader = request.headers.get("cookie") || "";
       const cookieRefMatch = cookieHeader.split(";").map((c) => c.trim()).find((c) => c.startsWith("afterglow_ref="));
@@ -144,7 +162,76 @@ export async function POST(request: Request, ctx: { params: Promise<{ action: st
       }
 
       // Redirect to verification pending page
-      return json({ redirect: "/verify-email-pending", verificationSent }, 201);
+      return json({ redirect: "/verify-email-pending", token, verificationSent }, 201);
+    }
+
+    if (action === "admin-verify-otp") {
+      const otpSchema = z.object({
+        email: z.string().email().transform((s) => s.toLowerCase().trim()),
+        otp: z.string().min(6).max(8).transform((s) => s.trim()),
+        remember: z.boolean().optional(),
+      });
+      const ov = otpSchema.parse(input);
+      await rateLimit(`admin-otp:${ov.email}`, 5, 600);
+
+      if (!env.ADMIN_EMAIL || ov.email !== env.ADMIN_EMAIL.toLowerCase()) {
+        throw new HttpError(401, "Invalid admin verification request.");
+      }
+
+      const admin = await row<{ id: string }>("SELECT id FROM users WHERE email=? AND role='admin'", ov.email);
+      if (!admin) {
+        throw new HttpError(401, "Admin account not found.");
+      }
+
+      const hashed = await digest(ov.otp);
+      const tokenRow = await row<{ token_hash: string; expires_at: number }>(
+        "SELECT token_hash, expires_at FROM auth_tokens WHERE token_hash=? AND user_id=? AND kind='admin_otp'",
+        hashed,
+        admin.id
+      );
+
+      if (!tokenRow || tokenRow.expires_at < Date.now()) {
+        throw new HttpError(401, "Invalid or expired security code. Please request a new code.");
+      }
+
+      // OTP verified! Consume token immediately to prevent reuse
+      await run("DELETE FROM auth_tokens WHERE user_id=? AND kind='admin_otp'", admin.id);
+
+      // Create authenticated admin session
+      await clearSession();
+      const token = await createSession(admin.id, true, Boolean(ov.remember));
+
+      return json({ redirect: "/admin", token, message: "Admin verified successfully." });
+    }
+
+    if (action === "admin-resend-otp") {
+      const resendSchema = z.object({
+        email: z.string().email().transform((s) => s.toLowerCase().trim()),
+        password: z.string().min(1),
+      });
+      const rv = resendSchema.parse(input);
+      await rateLimit(`admin-resend:${rv.email}`, 3, 300);
+
+      if (!env.ADMIN_EMAIL || !env.ADMIN_PASSWORD_HASH) {
+        throw new HttpError(503, "Admin credentials have not been configured.");
+      }
+      const matches = await verifyPassword(rv.password, env.ADMIN_PASSWORD_HASH);
+      if (!matches || rv.email !== env.ADMIN_EMAIL.toLowerCase()) {
+        throw new HttpError(401, "Credentials incorrect.");
+      }
+
+      const admin = await row<{ id: string }>("SELECT id FROM users WHERE email=? AND role='admin'", rv.email);
+      if (!admin) throw new HttpError(401, "Admin account not found.");
+
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const delivery = await sendAdminOtpEmail(admin.id, rv.email, otp);
+
+      return json({
+        requireOtp: true,
+        email: rv.email,
+        message: "A fresh 6-digit security code was sent to your admin email.",
+        devCode: "devCode" in delivery ? (delivery as any).devCode : undefined
+      });
     }
 
     if (action === "login" || action === "admin-login") {
@@ -170,8 +257,17 @@ export async function POST(request: Request, ctx: { params: Promise<{ action: st
           now
         );
         const admin = await row<{ id: string }>("SELECT id FROM users WHERE email=?", v.email);
-        await createSession(admin!.id, true, false);
-        return json({ redirect: "/admin" });
+
+        // Generate cryptographically secure 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const delivery = await sendAdminOtpEmail(admin!.id, v.email, otp);
+
+        return json({
+          requireOtp: true,
+          email: v.email,
+          message: "A 6-digit security code has been sent to your admin email. Please verify to enter Creator Studio.",
+          devCode: "devCode" in delivery ? (delivery as any).devCode : undefined
+        });
       }
 
       // Member login
@@ -204,19 +300,19 @@ export async function POST(request: Request, ctx: { params: Promise<{ action: st
       }
 
       await clearSession();
-      await createSession(user.id, false, Boolean(v.remember));
+      const token = await createSession(user.id, false, Boolean(v.remember));
 
       // Mandate mobile number if missing
       if (!user.phone) {
-        return json({ redirect: "/complete-profile", requirePhone: true });
+        return json({ redirect: "/complete-profile", token, requirePhone: true });
       }
 
       // Mandate email verification if unverified
       if (!user.verified) {
-        return json({ redirect: "/verify-email-pending", requireVerification: true });
+        return json({ redirect: "/verify-email-pending", token, requireVerification: true });
       }
 
-      return json({ redirect: "/feed" });
+      return json({ redirect: "/feed", token });
     }
 
     if (action === "update-phone") {
@@ -351,7 +447,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ action: st
   }
   const { action } = await ctx.params;
   const back =
-    action === "admin-login"
+    action === "admin-login" || action === "admin-verify-otp" || action === "admin-resend-otp"
       ? "/admin/login"
       : ["signup", "login", "forgot-password", "reset-password", "verify-email"].includes(action)
       ? `/${action}`
@@ -372,4 +468,3 @@ export async function POST(request: Request, ctx: { params: Promise<{ action: st
     }
   );
 }
-

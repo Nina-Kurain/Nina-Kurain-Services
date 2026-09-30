@@ -11,10 +11,30 @@ android {
         applicationId "com.ninakurain.services"
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName "1.0.0"
+        versionCode 3
+        versionName "2.1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    flavorDimensions = ["userType"]
+    productFlavors {
+        member {
+            dimension "userType"
+            applicationId "com.ninakurain.services"
+            manifestPlaceholders = [appName: "Nina Kurain VIP"]
+            buildConfigField "String", "TARGET_URL", "\"https://vip.ninakurainservices.in/login\""
+        }
+        admin {
+            dimension "userType"
+            applicationId "com.ninakurain.studio"
+            manifestPlaceholders = [appName: "Nina Studio"]
+            buildConfigField "String", "TARGET_URL", "\"https://vip.ninakurainservices.in/admin/login\""
+        }
     }
 
     signingConfigs {
@@ -39,7 +59,8 @@ android {
     // Rename the generated APK aesthetically
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
-            def name = "NinaKurain_Signature_Services_${variant.name}.apk"
+            def flavor = variant.flavorName ?: ""
+            def name = flavor == "admin" ? "NinaKurain_Studio_release.apk" : "NinaKurain_VIP_release.apk"
             outputFileName = name
         }
     }

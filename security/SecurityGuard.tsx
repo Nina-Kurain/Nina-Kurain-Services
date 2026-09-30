@@ -21,11 +21,56 @@ export function SecurityGuard() {
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    // Sync admin status on documentElement
+    try {
+      if (
+        window.location.pathname.toLowerCase().startsWith("/admin") ||
+        document.cookie.includes("nk_admin=1") ||
+        localStorage.getItem("nk_admin_mode") === "true" ||
+        sessionStorage.getItem("nk_admin_mode") === "true"
+      ) {
+        document.documentElement.dataset.admin = "true";
+        if ((window as any).AndroidSecurity?.setAdminMode) {
+          (window as any).AndroidSecurity.setAdminMode(true);
+        }
+      }
+    } catch (_) {}
+
+    // Verify admin status from server session API
+    try {
+      fetch("/api/auth/status")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data: any) => {
+          if (data?.isAdmin) {
+            document.documentElement.dataset.admin = "true";
+            localStorage.setItem("nk_admin_mode", "true");
+            document.cookie = "nk_admin=1; path=/; max-age=7776000; SameSite=Lax";
+            if ((window as any).AndroidSecurity?.setAdminMode) {
+              (window as any).AndroidSecurity.setAdminMode(true);
+            }
+          }
+        })
+        .catch(() => {});
+    } catch (_) {}
+
     // 1. Initialize permanent security engine
     const cleanup = securityEngine.init();
 
     // 2. Subscribe to security violation events
     const unsubscribe = securityEngine.subscribe((detail: SecurityEventDetail) => {
+      const isAdmin =
+        typeof window !== "undefined" &&
+        (securityEngine.isAdmin() ||
+          window.location.pathname.toLowerCase().startsWith("/admin") ||
+          document.cookie.includes("nk_admin=1") ||
+          document.documentElement.dataset.admin === "true" ||
+          localStorage.getItem("nk_admin_mode") === "true");
+
+      // Admins are allowed to take screenshots and inspect without blackout or toast
+      if (isAdmin) {
+        return;
+      }
+
       const isMobile =
         typeof window !== "undefined" &&
         (window.innerWidth <= 820 ||

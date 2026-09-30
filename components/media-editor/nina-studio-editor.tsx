@@ -55,6 +55,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  RefreshCw,
+  Film,
 } from "lucide-react";
 import {
   type ProjectType,
@@ -140,10 +142,19 @@ export function NinaStudioEditor({
   const [brushColor, setBrushColor] = useState<string>("#e56b83");
   const [brushSize, setBrushSize] = useState<number>(6);
 
-  // Video playback
+  // Video playback & interactive stage
   const videoPlayerRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [videoCurrentTime, setVideoCurrentTime] = useState<number>(0);
+  const [isDraggingVideo, setIsDraggingVideo] = useState<boolean>(false);
+  const dragStartRef = useRef<{ clientX: number; clientY: number; initX: number; initY: number } | null>(null);
+
+  const formatTimecode = (sec: number) => {
+    if (!Number.isFinite(sec) || sec < 0) return "00:00.0";
+    const m = Math.floor(sec / 60);
+    const s = (sec % 60).toFixed(1);
+    return `${m.toString().padStart(2, "0")}:${Number(s) < 10 ? "0" : ""}${s}`;
+  };
 
   // Crash recovery banner
   const [recoveredDraft, setRecoveredDraft] = useState<StudioProjectDraft | null>(
@@ -158,6 +169,9 @@ export function NinaStudioEditor({
 
   // Function reference for high-res photo canvas export
   const exportPhotoRef = useRef<(() => Promise<Blob>) | null>(null);
+  const handleExportReady = useCallback((fn: () => Promise<Blob>) => {
+    exportPhotoRef.current = fn;
+  }, []);
 
   // Current active slide
   const currentSlide = slides[activeSlideIndex];
@@ -165,23 +179,37 @@ export function NinaStudioEditor({
   // Helper to create a SlideItem from a File
   const createSlideFromFile = useCallback(
     async (file: File): Promise<SlideItem> => {
-      const isVideo = file.type.startsWith("video/");
+      const isVideo = file.type.startsWith("video/") || /\.(mp4|mov|webm|m4v|mkv)$/i.test(file.name);
       const sourceUrl = URL.createObjectURL(file);
 
       let videoTimeline: VideoTimelineState | undefined;
+      let coverBlob: Blob | undefined;
+      let coverUrl: string | undefined;
+
       if (isVideo) {
         try {
           const meta = await getVideoMetadata(file);
+          const safeDuration = Number.isFinite(meta.duration) && meta.duration > 0 ? meta.duration : 15;
+          const initialCoverSec = Math.min(0.2, Math.max(0.05, safeDuration - 0.05));
+          try {
+            coverBlob = await captureFrameAtTimestamp(file, initialCoverSec, 720, 1280);
+            coverUrl = URL.createObjectURL(coverBlob);
+          } catch (covErr) {
+            console.warn("[Studio Video] Immediate cover capture fallback:", covErr);
+          }
+
           videoTimeline = {
-            duration: meta.duration,
+            duration: safeDuration,
             trimStart: 0,
-            trimEnd: meta.duration,
+            trimEnd: safeDuration,
             playbackRate: 1,
             muted: false,
             volume: 1,
             audioFadeIn: false,
             audioFadeOut: false,
-            coverTimestamp: 0,
+            coverTimestamp: initialCoverSec,
+            coverBlob,
+            coverDataUrl: coverUrl,
           };
         } catch {
           videoTimeline = { ...DEFAULT_VIDEO_TIMELINE };
@@ -197,6 +225,8 @@ export function NinaStudioEditor({
         sourceUrl,
         name: file.name,
         type: isVideo ? "video" : "image",
+        coverBlob,
+        coverUrl,
         filterId: "normal",
         filterIntensity: 100,
         adjustments: { ...DEFAULT_TONE_ADJUSTMENTS },
@@ -251,6 +281,109 @@ export function NinaStudioEditor({
     setShowRecoveryBanner(false);
   };
 
+  // Helper to load video metadata, extract cover frame, and fetch real video bytes
+  const loadExistingVideoSlide = useCallback((
+    slideIdx: number,
+    sourceUrl: string,
+    mediaId?: string,
+    slideName?: string,
+    customCoverUrl?: string
+  ) => {
+    // 1. Fetch metadata & extract cover
+    getVideoMetadata(sourceUrl)
+      .then(async (meta) => {
+        const safeDuration = Number.isFinite(meta.duration) && meta.duration > 0 ? meta.duration : 15;
+        let coverBlob: Blob | undefined;
+        let coverUrl = customCoverUrl;
+        try {
+          if (!coverUrl) {
+            coverBlob = await captureFrameAtTimestamp(sourceUrl, Math.min(0.2, Math.max(0.05, safeDuration - 0.05)), 720, 1280);
+            coverUrl = URL.createObjectURL(coverBlob);
+          }
+        } catch (covErr) {
+          console.warn("[Studio Editor] Cover capture notice:", covErr);
+        }
+
+        setSlides((prev) => {
+          const next = [...prev];
+          if (next[slideIdx] && next[slideIdx].type === "video") {
+            const currentVt = next[slideIdx].videoTimeline || { ...DEFAULT_VIDEO_TIMELINE };
+            const currentTrimEnd = currentVt.trimEnd && currentVt.trimEnd > 0 && currentVt.trimEnd <= safeDuration
+              ? currentVt.trimEnd
+              : safeDuration;
+            next[slideIdx] = {
+              ...next[slideIdx],
+              coverBlob: coverBlob || next[slideIdx].coverBlob,
+              coverUrl: coverUrl || next[slideIdx].coverUrl,
+              videoTimeline: {
+                ...currentVt,
+                duration: safeDuration,
+                trimStart: currentVt.trimStart || 0,
+                trimEnd: currentTrimEnd,
+                coverBlob: coverBlob || currentVt.coverBlob,
+                coverDataUrl: coverUrl || currentVt.coverDataUrl,
+              },
+            };
+          }
+          return next;
+        });
+      })
+      .catch((err) => {
+        console.warn("[Studio Editor] Video metadata warning:", err);
+      });
+
+    // 2. Fetch actual video bytes
+    const retrieveBytes = async () => {
+      let activeUrl = sourceUrl;
+      try {
+        let res = await fetch(activeUrl, { credentials: "include" });
+        if (!res.ok && res.status === 403 && mediaId) {
+          // Token expired, refresh URL
+          const refreshed = await fetch(`/api/studio/media-url?id=${mediaId}`, { credentials: "include" }).then(r => r.json() as Promise<{ url?: string }>);
+          if (refreshed?.url) {
+            activeUrl = refreshed.url;
+            res = await fetch(activeUrl, { credentials: "include" });
+          }
+        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        if (!blob || blob.size === 0) throw new Error("Empty video file");
+        const file = new File([blob], slideName || `reel_${slideIdx + 1}.mp4`, { type: blob.type || "video/mp4" });
+
+        setSlides((prev) => {
+          const next = [...prev];
+          if (next[slideIdx] && next[slideIdx].type === "video") {
+            next[slideIdx] = {
+              ...next[slideIdx],
+              file,
+              sourceUrl: activeUrl,
+              isMediaLoading: false,
+              isMediaReady: true,
+              mediaError: undefined,
+            };
+          }
+          return next;
+        });
+      } catch (err) {
+        console.warn("[Studio Editor] Failed to pre-fetch video bytes:", err);
+        setSlides((prev) => {
+          const next = [...prev];
+          if (next[slideIdx] && next[slideIdx].type === "video") {
+            next[slideIdx] = {
+              ...next[slideIdx],
+              isMediaLoading: false,
+              isMediaReady: false,
+              mediaError: "Could not load video bytes from private storage. Tap Retry to reload.",
+            };
+          }
+          return next;
+        });
+      }
+    };
+
+    retrieveBytes();
+  }, []);
+
   // Initialize slides when modal opens with initialFiles
   useEffect(() => {
     if (!open) {
@@ -279,18 +412,24 @@ export function NinaStudioEditor({
                 id?: string;
                 name?: string;
                 mime?: string;
+                bytes?: number;
                 output_url?: string;
                 source_url?: string;
+                cover_url?: string;
+                source_media_id?: string;
+                output_media_id?: string;
+                cover_media_id?: string;
                 edit_recipe_json?: string;
               }>;
             };
           };
           if (data?.project) {
             const p = data.project;
+            const isVideoProj = p.project_type === "reel" || p.project_type === "video";
             setProjectId(p.id);
             setProjectTitle(p.title || "Studio Project");
             setProjectType(p.project_type || "photo");
-            setAspectRatio((p.aspect_ratio as AspectRatioType) || "4:5");
+            setAspectRatio(isVideoProj ? "9:16" : (p.aspect_ratio as AspectRatioType) || "4:5");
             if (p.items?.length) {
               const loadedSlides: SlideItem[] = p.items.map((it, i) => {
                 let recipe: Record<string, unknown> = {};
@@ -299,14 +438,40 @@ export function NinaStudioEditor({
                 } catch {
                   // ignore
                 }
-                const isVid =
+                const isVid = Boolean(
+                  isVideoProj ||
                   it.mime?.startsWith("video/") ||
-                  it.output_url?.endsWith(".mp4") ||
-                  it.source_url?.endsWith(".mp4");
+                  it.name?.match(/\.(mp4|mov|webm|m4v|mkv)$/i) ||
+                  it.output_url?.match(/\.(mp4|mov|webm|m4v|mkv)(\?.*)?$/i) ||
+                  it.source_url?.match(/\.(mp4|mov|webm|m4v|mkv)(\?.*)?$/i) ||
+                  Boolean(recipe.videoTimeline)
+                );
+
+                let initialVt: VideoTimelineState | undefined = undefined;
+                if (isVid) {
+                  const recVt = recipe.videoTimeline as Partial<VideoTimelineState> | undefined;
+                  const safeDur = recVt?.duration && recVt.duration > 0 ? recVt.duration : 15;
+                  initialVt = {
+                    ...DEFAULT_VIDEO_TIMELINE,
+                    duration: safeDur,
+                    trimStart: recVt?.trimStart || 0,
+                    trimEnd: recVt?.trimEnd && recVt.trimEnd > 0 ? recVt.trimEnd : safeDur,
+                    playbackRate: recVt?.playbackRate || 1,
+                    muted: recVt?.muted ?? false,
+                    volume: recVt?.volume ?? 1,
+                    audioFadeIn: recVt?.audioFadeIn ?? false,
+                    audioFadeOut: recVt?.audioFadeOut ?? false,
+                    coverTimestamp: recVt?.coverTimestamp || 0.1,
+                    coverDataUrl: recVt?.coverDataUrl || it.cover_url,
+                  };
+                }
+
+                const slideUrl = it.output_url || it.source_url || "";
                 return {
                   id: it.id || String(i),
-                  file: new File([], it.name || `Slide ${i + 1}`),
-                  sourceUrl: it.output_url || it.source_url || "",
+                  mediaId: it.source_media_id || it.output_media_id || it.id,
+                  file: undefined,
+                  sourceUrl: slideUrl,
                   name: it.name || `Slide ${i + 1}`,
                   type: isVid ? "video" : "image",
                   filterId: (recipe.filterId as string) || "normal",
@@ -314,12 +479,17 @@ export function NinaStudioEditor({
                   adjustments: (recipe.adjustments as ToneAdjustments) || { ...DEFAULT_TONE_ADJUSTMENTS },
                   transform: (recipe.transform as TransformState) || {
                     ...DEFAULT_TRANSFORM_STATE,
-                    aspectRatio: (p.aspect_ratio as AspectRatioType) || "4:5",
+                    aspectRatio: isVid ? "9:16" : (p.aspect_ratio as AspectRatioType) || "4:5",
                   },
                   textLayers: (recipe.textLayers as EditorTextLayer[]) || [],
-                  videoTimeline: recipe.videoTimeline as VideoTimelineState | undefined,
+                  videoTimeline: initialVt,
+                  coverUrl: it.cover_url || initialVt?.coverDataUrl,
+                  isMediaLoading: isVid,
+                  isMediaReady: !isVid,
+                  mediaError: undefined,
                 };
               });
+
               setSlides(loadedSlides);
               setActiveSlideIndex(0);
               if (loadedSlides[0]?.type === "video") {
@@ -327,6 +497,20 @@ export function NinaStudioEditor({
               } else {
                 setActiveTab("crop");
               }
+
+              // Preload video bytes and frame cover for all video slides
+              p.items.forEach((it, i) => {
+                const s = loadedSlides[i];
+                if (s && s.type === "video" && s.sourceUrl) {
+                  loadExistingVideoSlide(
+                    i,
+                    s.sourceUrl,
+                    it.source_media_id || it.output_media_id || it.id,
+                    it.name,
+                    it.cover_url
+                  );
+                }
+              });
             }
           }
         })
@@ -345,7 +529,10 @@ export function NinaStudioEditor({
       setProjectId(pid);
 
       const hasVideo = initialMedia.some(
-        (m) => m.mime?.startsWith("video/") || m.url?.endsWith(".mp4")
+        (m) =>
+          m.mime?.startsWith("video/") ||
+          m.name?.match(/\.(mp4|mov|webm|m4v|mkv)$/i) ||
+          m.url?.match(/\.(mp4|mov|webm|m4v|mkv)(\?.*)?$/i)
       );
       const isMulti = initialMedia.length > 1;
       const detectedType: ProjectType = hasVideo
@@ -368,11 +555,36 @@ export function NinaStudioEditor({
             // ignore
           }
         }
-        const isVid = m.mime?.startsWith("video/") || m.url?.endsWith(".mp4");
+        const isVid = Boolean(
+          m.mime?.startsWith("video/") ||
+          m.name?.match(/\.(mp4|mov|webm|m4v|mkv)$/i) ||
+          m.url?.match(/\.(mp4|mov|webm|m4v|mkv)(\?.*)?$/i) ||
+          Boolean(recipe.videoTimeline)
+        );
+
+        let initialVt: VideoTimelineState | undefined = undefined;
+        if (isVid) {
+          const recVt = recipe.videoTimeline as Partial<VideoTimelineState> | undefined;
+          const safeDur = recVt?.duration && recVt.duration > 0 ? recVt.duration : 15;
+          initialVt = {
+            ...DEFAULT_VIDEO_TIMELINE,
+            duration: safeDur,
+            trimStart: recVt?.trimStart || 0,
+            trimEnd: recVt?.trimEnd && recVt.trimEnd > 0 ? recVt.trimEnd : safeDur,
+            playbackRate: recVt?.playbackRate || 1,
+            muted: recVt?.muted ?? false,
+            volume: recVt?.volume ?? 1,
+            audioFadeIn: recVt?.audioFadeIn ?? false,
+            audioFadeOut: recVt?.audioFadeOut ?? false,
+            coverTimestamp: recVt?.coverTimestamp || 0.1,
+            coverDataUrl: recVt?.coverDataUrl,
+          };
+        }
+
         return {
           id: m.id || Math.random().toString(36).slice(2, 9),
           mediaId: m.id,
-          file: new File([], m.name || `Media ${idx + 1}`),
+          file: undefined,
           sourceUrl: m.url,
           name: m.name || `Media ${idx + 1}`,
           type: isVid ? "video" : "image",
@@ -386,8 +598,11 @@ export function NinaStudioEditor({
             aspectRatio: isVid ? "9:16" : defaultAspect,
           },
           textLayers: (recipe.textLayers as EditorTextLayer[]) || [],
-          videoTimeline:
-            (recipe.videoTimeline as VideoTimelineState) || undefined,
+          videoTimeline: initialVt,
+          coverUrl: initialVt?.coverDataUrl,
+          isMediaLoading: isVid,
+          isMediaReady: !isVid,
+          mediaError: undefined,
         };
       });
 
@@ -398,6 +613,15 @@ export function NinaStudioEditor({
       } else {
         setActiveTab("crop");
       }
+
+      // Preload video bytes and frame cover for all imported videos
+      initialMedia.forEach((m, idx) => {
+        const s = mediaSlides[idx];
+        if (s && s.type === "video" && m.url) {
+          loadExistingVideoSlide(idx, m.url, m.id, m.name);
+        }
+      });
+
       return;
     }
 
@@ -431,7 +655,7 @@ export function NinaStudioEditor({
         }
       });
     }
-  }, [open, initialFiles, initialMedia, existingProjectId, initialProjectType, defaultAspect, createSlideFromFile]);
+  }, [open, initialFiles, initialMedia, existingProjectId, initialProjectType, defaultAspect, createSlideFromFile, loadExistingVideoSlide]);
 
   // Periodic autosave to IndexedDB
   useEffect(() => {
@@ -493,14 +717,37 @@ export function NinaStudioEditor({
   };
 
   // Add extra slide from file input
-  const handleAddSlideFiles = async (files: FileList | null) => {
+  const handleAddSlideFiles = async (files: FileList | File[] | null) => {
     if (!files || files.length === 0) return;
-    const newItems = await Promise.all(
-      Array.from(files).map((f) => createSlideFromFile(f))
-    );
-    setSlides((prev) => [...prev, ...newItems]);
-    if (slides.length + newItems.length > 1 && projectType === "photo") {
-      setProjectType("carousel");
+    try {
+      const fileArr = Array.from(files);
+      const newItems = await Promise.all(
+        fileArr.map((f) => createSlideFromFile(f))
+      );
+      if (newItems.length === 0) return;
+
+      setSlides((prev) => {
+        const next = [...prev, ...newItems];
+        if (prev.length === 0) {
+          // If starting from empty editor, auto-configure project type and active tab
+          const hasVideo = newItems.some((s) => s.type === "video");
+          const isMulti = newItems.length > 1;
+          const detectedType: ProjectType = hasVideo ? "reel" : isMulti ? "carousel" : "photo";
+          setProjectType(detectedType);
+          if (hasVideo) {
+            setAspectRatio("9:16");
+            setActiveTab("video");
+          } else {
+            setActiveTab("crop");
+          }
+          setActiveSlideIndex(0);
+        } else if (next.length > 1 && projectType === "photo") {
+          setProjectType("carousel");
+        }
+        return next;
+      });
+    } catch (err) {
+      console.error("[Studio Editor] Failed to add media slides:", err);
     }
   };
 
@@ -567,6 +814,7 @@ export function NinaStudioEditor({
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", "/api/studio/upload");
+      xhr.timeout = 180000; // 3 minute network timeout
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable && onProgress) {
@@ -574,6 +822,7 @@ export function NinaStudioEditor({
         }
       };
 
+      xhr.ontimeout = () => reject(new Error("Upload timed out. Please check your network and retry."));
       xhr.onerror = () => reject(new Error("Network error during upload"));
       xhr.onload = () => {
         try {
@@ -667,64 +916,115 @@ export function NinaStudioEditor({
         setProgressMsg(`Processing slide ${i + 1} of ${slides.length}…`);
         setProgressPct(Math.round(((i + 0.1) / slides.length) * 80));
 
-        // 1. Upload original to "Originals" folder if file exists
-        let sourceMediaId: string | undefined = slide.mediaId;
-        if (slide.file && !sourceMediaId) {
-          const originalAsset = await uploadAssetToDrive(
-            slide.file,
-            slide.file.name,
-            "Originals"
-          );
-          sourceMediaId = originalAsset.id;
-        }
+        const sourceMediaId: string | undefined = slide.mediaId;
 
-        // 2. Render edited output
+        // 1. Render edited output
         let outputBlob: Blob;
         let outputFilename: string;
         let targetCategory: string;
 
         if (slide.type === "video") {
-          setProgressMsg(`Encoding video reel with WebCodecs & Mediabunny…`);
           targetCategory = "Reels";
           outputFilename = `edited_${slide.name.replace(/\.[^.]+$/, "")}.mp4`;
 
           let videoFile = slide.file;
           if (!videoFile || videoFile.size === 0) {
             if (slide.sourceUrl) {
+              setProgressMsg(`Retrieving video file for "${slide.name}"…`);
               try {
-                const res = await fetch(slide.sourceUrl);
-                const blob = await res.blob();
-                videoFile = new File([blob], slide.name || "video.mp4", { type: blob.type || "video/mp4" });
+                let res = await fetch(slide.sourceUrl, { credentials: "include" });
+                if (!res.ok && res.status === 403 && slide.mediaId) {
+                  const refreshed = await fetch(`/api/studio/media-url?id=${slide.mediaId}`, { credentials: "include" }).then(r => r.json() as Promise<{ url?: string }>);
+                  if (refreshed?.url) {
+                    res = await fetch(refreshed.url, { credentials: "include" });
+                  }
+                }
+                if (res.ok) {
+                  const blob = await res.blob();
+                  if (blob && blob.size > 0) {
+                    videoFile = new File([blob], slide.name || "video.mp4", { type: blob.type || "video/mp4" });
+                  }
+                }
               } catch (e) {
                 console.warn("Could not fetch remote video file:", e);
               }
             }
           }
 
-          if (videoFile && slide.videoTimeline) {
+          if (!videoFile || videoFile.size === 0) {
+            throw new Error(`Video file for "${slide.name}" could not be retrieved from storage. Please verify connection and retry.`);
+          }
+
+          const timeline: VideoTimelineState = slide.videoTimeline || {
+            ...DEFAULT_VIDEO_TIMELINE,
+            duration: 15,
+            trimStart: 0,
+            trimEnd: 15,
+          };
+
+          const hasUserEdits = Boolean(
+            (timeline.trimStart && timeline.trimStart > 0.1) ||
+            (timeline.duration > 0 && timeline.trimEnd > 0 && (timeline.duration - timeline.trimEnd) > 0.3) ||
+            (timeline.playbackRate !== undefined && timeline.playbackRate !== 1) ||
+            timeline.muted ||
+            (timeline.volume !== undefined && timeline.volume !== 1) ||
+            (slide.filterId && slide.filterId !== "normal" && slide.filterId !== "original") ||
+            (slide.adjustments && (
+              Math.abs((slide.adjustments.brightness || 0) + (slide.adjustments.exposure || 0)) > 1 ||
+              Math.abs(slide.adjustments.contrast || 0) > 1 ||
+              Math.abs(slide.adjustments.saturation || 0) > 1 ||
+              Math.abs(slide.adjustments.warmth || 0) > 1 ||
+              Math.abs(slide.adjustments.fade || 0) > 1
+            )) ||
+            (slide.transform && (
+              (slide.transform.aspectRatio && slide.transform.aspectRatio !== "original") ||
+              (slide.transform.zoom && slide.transform.zoom > 1.02) ||
+              (slide.transform.rotation && slide.transform.rotation !== 0) ||
+              (slide.transform.straighten && Math.abs(slide.transform.straighten) > 0.5) ||
+              slide.transform.flipH ||
+              slide.transform.flipV ||
+              (slide.transform.x && Math.abs(slide.transform.x) > 0.02) ||
+              (slide.transform.y && Math.abs(slide.transform.y) > 0.02)
+            ))
+          );
+
+          setProgressMsg(`Processing video reel…`);
+          try {
             outputBlob = await processVideoWithMediabunny(
               videoFile,
-              slide.videoTimeline,
+              timeline,
               (p) => {
                 setProgressPct(Math.round(((i + p / 100) / slides.length) * 80));
               },
               slide.adjustments,
               slide.filterId,
-              slide.filterIntensity
+              slide.filterIntensity,
+              slide.transform
             );
-          } else if (videoFile) {
+          } catch (videoErr) {
+            console.warn("[Studio Editor] Video processing error:", videoErr);
+            if (hasUserEdits) {
+              const confirmFallback = window.confirm(
+                `Video processing could not apply edits (${videoErr instanceof Error ? videoErr.message : "Media encoding issue"}).\n\nClick OK to upload the original video without edits, or Cancel to return to the editor.`
+              );
+              if (!confirmFallback) {
+                throw new Error("Video export cancelled by creator after processing error.");
+              }
+            }
             outputBlob = videoFile;
-          } else {
-            outputBlob = new Blob([], { type: "video/mp4" });
+          }
+
+          if (!outputBlob || outputBlob.size === 0) {
+            throw new Error("Generated video file is empty. Export stopped to prevent corrupt upload.");
           }
 
           // Frame-accurate cover thumbnail
           let coverBlob = slide.coverBlob;
-          if (!coverBlob && videoFile && videoFile.size > 0) {
+          if (!coverBlob && ((videoFile && videoFile.size > 0) || slide.sourceUrl)) {
             try {
               coverBlob = await captureFrameAtTimestamp(
-                videoFile,
-                slide.videoTimeline?.coverTimestamp || 0,
+                (videoFile && videoFile.size > 0) ? videoFile : slide.sourceUrl,
+                timeline.coverTimestamp || 0.1,
                 1080,
                 1920
               );
@@ -736,6 +1036,7 @@ export function NinaStudioEditor({
           let coverAssetId: string | undefined;
           if (coverBlob && coverBlob.size > 0) {
             try {
+              setProgressMsg("Uploading video cover thumbnail…");
               const coverAsset = await uploadAssetToDrive(
                 coverBlob,
                 `cover_${slide.name.replace(/\.[^.]+$/, "")}.jpg`,
@@ -748,8 +1049,21 @@ export function NinaStudioEditor({
             }
           }
 
+          // 2. Upload video output
+          setProgressMsg(`Uploading reel to private vault…`);
+          const uploadedEdited = await uploadAssetToDrive(
+            outputBlob,
+            outputFilename,
+            targetCategory,
+            (pct) => {
+              setProgressPct(Math.round(((i + 0.8 + pct * 0.002) / slides.length) * 90));
+            }
+          );
+
+          exportedAssets.push(uploadedEdited);
           dbItemLinks.push({
-            sourceId: sourceMediaId,
+            sourceId: sourceMediaId || uploadedEdited.id,
+            outputId: uploadedEdited.id,
             ...(coverAssetId ? { coverId: coverAssetId } : {}),
           });
         } else {
@@ -774,23 +1088,21 @@ export function NinaStudioEditor({
             outputBlob = new Blob([]);
           }
 
-          dbItemLinks.push({ sourceId: sourceMediaId });
-        }
+          setProgressMsg(`Uploading edited media to private vault (${targetCategory})…`);
+          const uploadedEdited = await uploadAssetToDrive(
+            outputBlob,
+            outputFilename,
+            targetCategory,
+            (pct) => {
+              setProgressPct(Math.round(((i + 0.8 + pct * 0.002) / slides.length) * 90));
+            }
+          );
 
-        // 3. Upload edited media to Google Drive
-        setProgressMsg(`Uploading edited media to private vault (${targetCategory})…`);
-        const uploadedEdited = await uploadAssetToDrive(
-          outputBlob,
-          outputFilename,
-          targetCategory,
-          (pct) => {
-            setProgressPct(Math.round(((i + 0.8 + pct * 0.002) / slides.length) * 90));
-          }
-        );
-
-        exportedAssets.push(uploadedEdited);
-        if (dbItemLinks[i]) {
-          dbItemLinks[i].outputId = uploadedEdited.id;
+          exportedAssets.push(uploadedEdited);
+          dbItemLinks.push({
+            sourceId: sourceMediaId || uploadedEdited.id,
+            outputId: uploadedEdited.id,
+          });
         }
       }
 
@@ -899,13 +1211,34 @@ export function NinaStudioEditor({
             <button
               type="button"
               className="btn-done"
-              disabled={busy || slides.length === 0}
+              disabled={
+                busy ||
+                slides.length === 0 ||
+                slides.some(
+                  (s) =>
+                    s.isMediaLoading ||
+                    !!s.mediaError ||
+                    (s.type === "video" && s.isMediaReady === false)
+                )
+              }
               onClick={handleReviewAndPublish}
+              title={
+                slides.some((s) => s.isMediaLoading)
+                  ? "Waiting for media to load..."
+                  : slides.some((s) => s.mediaError)
+                  ? "Fix or retry failed media before continuing"
+                  : undefined
+              }
             >
               {busy ? (
                 <>
                   <Loader2 size={14} className="animate-spin" />
                   <span>{progressPct}%</span>
+                </>
+              ) : slides.some((s) => s.isMediaLoading) ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Loading...</span>
                 </>
               ) : (
                 <>
@@ -958,54 +1291,426 @@ export function NinaStudioEditor({
               currentSlide.type === "video" ? (
                 /* Video Player Stage */
                 <div className="video-player-stage">
-                  <video
-                    ref={videoPlayerRef}
-                    src={currentSlide.sourceUrl}
-                    playsInline
-                    muted={currentSlide.videoTimeline?.muted}
-                    onTimeUpdate={() => {
-                      if (videoPlayerRef.current) {
-                        const cur = videoPlayerRef.current.currentTime;
-                        setVideoCurrentTime(cur);
-                        const trimStart = currentSlide.videoTimeline?.trimStart || 0;
-                        const trimEnd = currentSlide.videoTimeline?.trimEnd || currentSlide.videoTimeline?.duration || 99999;
-                        if (trimEnd > trimStart + 0.1 && cur >= trimEnd) {
-                          videoPlayerRef.current.currentTime = trimStart;
-                        }
-                      }
-                    }}
-                    onEnded={() => setIsPlaying(false)}
-                    style={{
-                      maxHeight: "100%",
-                      maxWidth: "100%",
-                      borderRadius: 12,
-                      objectFit: "contain",
-                      filter: buildVideoFilterString(
-                        currentSlide.adjustments,
-                        currentSlide.filterId,
-                        currentSlide.filterIntensity
-                      ),
-                    }}
-                  />
+                  {currentSlide.isMediaLoading && (
+                    <div className="video-player-loading-overlay">
+                      <Loader2 size={36} className="animate-spin text-rose-500" />
+                      <p>Loading video stream & metadata...</p>
+                    </div>
+                  )}
 
-                  {/* Video Overlay Play Control */}
-                  <div className="video-controls-overlay">
-                    <button
-                      type="button"
-                      className="btn-play-pause"
-                      onClick={() => {
-                        if (!videoPlayerRef.current) return;
-                        if (isPlaying) {
-                          videoPlayerRef.current.pause();
-                          setIsPlaying(false);
-                        } else {
-                          videoPlayerRef.current.play();
-                          setIsPlaying(true);
-                        }
+                  {currentSlide.mediaError && (
+                    <div className="video-player-error-banner">
+                      <AlertTriangle size={24} className="text-amber-400" />
+                      <p>{currentSlide.mediaError}</p>
+                      <button
+                        type="button"
+                        className="btn-retry-video"
+                        onClick={() => {
+                          loadExistingVideoSlide(
+                            activeSlideIndex,
+                            currentSlide.sourceUrl,
+                            currentSlide.mediaId,
+                            currentSlide.name,
+                            currentSlide.coverUrl
+                          );
+                          if (videoPlayerRef.current) {
+                            videoPlayerRef.current.load();
+                          }
+                        }}
+                      >
+                        Retry Video
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Main Video Crop Stage Viewport */}
+                  <div className="video-crop-stage-viewport">
+                    <div
+                      className="video-aspect-mask"
+                      onMouseDown={(e) => {
+                        if (e.button !== 0) return;
+                        dragStartRef.current = {
+                          clientX: e.clientX,
+                          clientY: e.clientY,
+                          initX: currentSlide.transform?.x || 0,
+                          initY: currentSlide.transform?.y || 0,
+                        };
+                        setIsDraggingVideo(true);
+                      }}
+                      onMouseMove={(e) => {
+                        if (!dragStartRef.current) return;
+                        const dx = (e.clientX - dragStartRef.current.clientX) / 300;
+                        const dy = (e.clientY - dragStartRef.current.clientY) / 300;
+                        const newX = Math.max(-1, Math.min(1, Number((dragStartRef.current.initX + dx).toFixed(3))));
+                        const newY = Math.max(-1, Math.min(1, Number((dragStartRef.current.initY + dy).toFixed(3))));
+                        updateCurrentSlide((prev) => ({
+                          ...prev,
+                          transform: { ...prev.transform, x: newX, y: newY },
+                        }));
+                      }}
+                      onMouseUp={() => {
+                        dragStartRef.current = null;
+                        setIsDraggingVideo(false);
+                      }}
+                      onMouseLeave={() => {
+                        dragStartRef.current = null;
+                        setIsDraggingVideo(false);
+                      }}
+                      onTouchStart={(e) => {
+                        if (e.touches.length !== 1) return;
+                        const t = e.touches[0];
+                        dragStartRef.current = {
+                          clientX: t.clientX,
+                          clientY: t.clientY,
+                          initX: currentSlide.transform?.x || 0,
+                          initY: currentSlide.transform?.y || 0,
+                        };
+                      }}
+                      onTouchMove={(e) => {
+                        if (!dragStartRef.current || e.touches.length !== 1) return;
+                        const t = e.touches[0];
+                        const dx = (t.clientX - dragStartRef.current.clientX) / 260;
+                        const dy = (t.clientY - dragStartRef.current.clientY) / 260;
+                        const newX = Math.max(-1, Math.min(1, Number((dragStartRef.current.initX + dx).toFixed(3))));
+                        const newY = Math.max(-1, Math.min(1, Number((dragStartRef.current.initY + dy).toFixed(3))));
+                        updateCurrentSlide((prev) => ({
+                          ...prev,
+                          transform: { ...prev.transform, x: newX, y: newY },
+                        }));
+                      }}
+                      onTouchEnd={() => {
+                        dragStartRef.current = null;
+                      }}
+                      onWheel={(e) => {
+                        e.preventDefault();
+                        const delta = e.deltaY < 0 ? 0.05 : -0.05;
+                        const currentZ = currentSlide.transform?.zoom || 1;
+                        const nextZ = Math.min(3, Math.max(1, Number((currentZ + delta).toFixed(2))));
+                        updateCurrentSlide((prev) => ({
+                          ...prev,
+                          transform: { ...prev.transform, zoom: nextZ },
+                        }));
+                      }}
+                      style={{
+                        aspectRatio:
+                          aspectRatio === "9:16" ? "9 / 16" :
+                          aspectRatio === "1:1" ? "1 / 1" :
+                          aspectRatio === "4:5" ? "4 / 5" :
+                          aspectRatio === "16:9" ? "16 / 9" : undefined,
+                        width: aspectRatio === "original" ? "auto" : (aspectRatio === "16:9" ? "100%" : "auto"),
+                        height: aspectRatio === "original" ? "100%" : (aspectRatio === "16:9" ? "auto" : "100%"),
+                        maxWidth: "100%",
+                        maxHeight: "100%",
                       }}
                     >
-                      {isPlaying ? <Pause size={28} /> : <Play size={28} />}
-                    </button>
+                      <video
+                        ref={videoPlayerRef}
+                        src={currentSlide.sourceUrl}
+                        playsInline
+                        crossOrigin="anonymous"
+                        preload="auto"
+                        muted={currentSlide.videoTimeline?.muted}
+                        onLoadedMetadata={(e) => {
+                          const vid = e.currentTarget;
+                          const dur = vid.duration;
+                          if (dur && Number.isFinite(dur) && dur > 0) {
+                            updateCurrentSlide((prev) => {
+                              const vt = prev.videoTimeline || { ...DEFAULT_VIDEO_TIMELINE };
+                              const isDefaultDuration = !vt.duration || vt.duration <= 0 || vt.duration === 15;
+                              const newDuration = isDefaultDuration ? dur : vt.duration;
+                              const newTrimEnd = (isDefaultDuration || vt.trimEnd > dur) ? dur : vt.trimEnd;
+                              return {
+                                ...prev,
+                                videoTimeline: {
+                                  ...vt,
+                                  duration: newDuration,
+                                  trimEnd: newTrimEnd,
+                                },
+                              };
+                            });
+                          }
+                        }}
+                        onLoadedData={() => {
+                          updateCurrentSlide((prev) => ({
+                            ...prev,
+                            isMediaLoading: false,
+                            isMediaReady: true,
+                            mediaError: undefined,
+                          }));
+                        }}
+                        onCanPlay={() => {
+                          updateCurrentSlide((prev) => ({
+                            ...prev,
+                            isMediaLoading: false,
+                            isMediaReady: true,
+                            mediaError: undefined,
+                          }));
+                        }}
+                        onError={(e) => {
+                          const mediaErr = (e.currentTarget as HTMLVideoElement).error;
+                          const msg = mediaErr
+                            ? `Video playback error (${mediaErr.code}): ${mediaErr.message || "Failed to decode or play video stream"}`
+                            : "Video stream failed to load or decode.";
+                          console.error("[Studio Editor] Video element error:", mediaErr, e);
+                          updateCurrentSlide((prev) => ({
+                            ...prev,
+                            isMediaLoading: false,
+                            isMediaReady: false,
+                            mediaError: msg,
+                          }));
+                        }}
+                        onTimeUpdate={() => {
+                          if (videoPlayerRef.current) {
+                            const cur = videoPlayerRef.current.currentTime;
+                            setVideoCurrentTime(cur);
+                            const trimStart = currentSlide.videoTimeline?.trimStart || 0;
+                            const trimEnd = currentSlide.videoTimeline?.trimEnd || currentSlide.videoTimeline?.duration || 99999;
+                            if (trimEnd > trimStart + 0.1 && cur >= trimEnd) {
+                              videoPlayerRef.current.currentTime = trimStart;
+                            }
+                          }
+                        }}
+                        onEnded={() => setIsPlaying(false)}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: aspectRatio === "original" ? "contain" : "cover",
+                          transform: `translate(${(currentSlide.transform?.x || 0) * 100}%, ${(currentSlide.transform?.y || 0) * 100}%) scale(${currentSlide.transform?.zoom || 1}) rotate(${((currentSlide.transform?.rotation || 0) + (currentSlide.transform?.straighten || 0))}deg) scaleX(${currentSlide.transform?.flipH ? -1 : 1}) scaleY(${currentSlide.transform?.flipV ? -1 : 1})`,
+                          transformOrigin: "center center",
+                          transition: isDraggingVideo ? "none" : "transform 0.08s ease-out, filter 0.15s ease",
+                          filter: buildVideoFilterString(
+                            currentSlide.adjustments,
+                            currentSlide.filterId,
+                            currentSlide.filterIntensity
+                          ),
+                          pointerEvents: "none",
+                        }}
+                      />
+
+                      {/* 3x3 Rule-of-Thirds Grid Guides */}
+                      {showSafeGuides && (
+                        <div className="grid-overlay visible" style={{ pointerEvents: "none" }}>
+                          <div className="grid-cell" />
+                          <div className="grid-cell" />
+                          <div className="grid-cell" />
+                          <div className="grid-cell" />
+                          <div className="grid-cell" />
+                          <div className="grid-cell" />
+                          <div className="grid-cell" />
+                          <div className="grid-cell" />
+                          <div className="grid-cell" />
+                        </div>
+                      )}
+
+                      {/* Reels / Story Safe Margins */}
+                      {showSafeGuides && aspectRatio === "9:16" && (
+                        <div className="video-reel-guides">
+                          <div className="reel-guide-top">
+                            <span>Profile Header Safe</span>
+                          </div>
+                          <div className="reel-guide-right">
+                            <span>Actions</span>
+                          </div>
+                          <div className="reel-guide-bottom">
+                            <span>Captions &amp; Audio Safe Zone</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Center Play / Pause trigger */}
+                      {!currentSlide.mediaError && !currentSlide.isMediaLoading && (
+                        <div
+                          className={`video-center-play-trigger ${!isPlaying ? "is-paused" : ""}`}
+                          onClick={() => {
+                            if (!videoPlayerRef.current) return;
+                            if (isPlaying) {
+                              videoPlayerRef.current.pause();
+                              setIsPlaying(false);
+                            } else {
+                              videoPlayerRef.current.play()
+                                .then(() => setIsPlaying(true))
+                                .catch((err) => {
+                                  console.warn("[Studio Editor] Play interrupted:", err);
+                                  setIsPlaying(false);
+                                });
+                            }
+                          }}
+                        >
+                          <div className="btn-center-play-circle">
+                            {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Floating Viewport Position & Alignment Pill */}
+                  <div className="viewport-position-badge" style={{ margin: "2px 0 0" }}>
+                    <div className="badge-item">
+                      <Move size={12} />
+                      <span>Drag video to reposition</span>
+                    </div>
+                    <span className="badge-bullet">•</span>
+                    <div className="badge-item">
+                      <ZoomIn size={12} />
+                      <span>Scroll to zoom ({(currentSlide.transform?.zoom || 1).toFixed(2)}x)</span>
+                    </div>
+                    {((currentSlide.transform?.zoom || 1) > 1.01 ||
+                      (currentSlide.transform?.x && Math.abs(currentSlide.transform.x) > 0.01) ||
+                      (currentSlide.transform?.y && Math.abs(currentSlide.transform.y) > 0.01) ||
+                      (currentSlide.transform?.rotation && currentSlide.transform.rotation !== 0)) && (
+                      <>
+                        <span className="badge-bullet">•</span>
+                        <button
+                          type="button"
+                          className="badge-btn-reset"
+                          onClick={() => {
+                            updateCurrentSlide((prev) => ({
+                              ...prev,
+                              transform: {
+                                ...prev.transform,
+                                x: 0,
+                                y: 0,
+                                zoom: 1,
+                                rotation: 0,
+                                straighten: 0,
+                                flipH: false,
+                                flipV: false,
+                              },
+                            }));
+                          }}
+                        >
+                          Reset Framing
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Professional Video Playback Suite Bar */}
+                  <div className="video-suite-playback-bar">
+                    {/* Scrubber Timeline */}
+                    <div
+                      className="video-scrubber-track-wrap"
+                      onClick={(e) => {
+                        if (!videoPlayerRef.current) return;
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                        const dur = currentSlide.videoTimeline?.duration || videoPlayerRef.current.duration || 15;
+                        const targetTime = pos * dur;
+                        videoPlayerRef.current.currentTime = targetTime;
+                        setVideoCurrentTime(targetTime);
+                      }}
+                    >
+                      <div className="video-scrubber-track">
+                        {/* Trim range indicator */}
+                        <div
+                          className="video-scrubber-trim-range"
+                          style={{
+                            left: `${((currentSlide.videoTimeline?.trimStart || 0) / (currentSlide.videoTimeline?.duration || 15)) * 100}%`,
+                            width: `${(((currentSlide.videoTimeline?.trimEnd || currentSlide.videoTimeline?.duration || 15) - (currentSlide.videoTimeline?.trimStart || 0)) / (currentSlide.videoTimeline?.duration || 15)) * 100}%`,
+                          }}
+                        />
+                        {/* Playhead progress */}
+                        <div
+                          className="video-scrubber-progress"
+                          style={{
+                            width: `${((videoCurrentTime || 0) / (currentSlide.videoTimeline?.duration || 15)) * 100}%`,
+                          }}
+                        />
+                        <div
+                          className="video-scrubber-playhead"
+                          style={{
+                            left: `${((videoCurrentTime || 0) / (currentSlide.videoTimeline?.duration || 15)) * 100}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Playback Controls Row */}
+                    <div className="video-playback-controls-row">
+                      <div className="playback-controls-left">
+                        <button
+                          type="button"
+                          className="btn-suite-play"
+                          onClick={() => {
+                            if (!videoPlayerRef.current) return;
+                            if (isPlaying) {
+                              videoPlayerRef.current.pause();
+                              setIsPlaying(false);
+                            } else {
+                              videoPlayerRef.current.play()
+                                .then(() => setIsPlaying(true))
+                                .catch(() => setIsPlaying(false));
+                            }
+                          }}
+                        >
+                          {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+                          <span>{isPlaying ? "Pause" : "Play"}</span>
+                        </button>
+
+                        <span className="timecode-display">
+                          {formatTimecode(videoCurrentTime)} / {formatTimecode(currentSlide.videoTimeline?.duration || 15)}
+                        </span>
+                      </div>
+
+                      <div className="playback-controls-center">
+                        <div className="speed-pills-group">
+                          {[0.5, 1, 1.5, 2].map((spd) => (
+                            <button
+                              key={spd}
+                              type="button"
+                              className={`speed-pill ${(currentSlide.videoTimeline?.playbackRate || 1) === spd ? "active" : ""}`}
+                              onClick={() => {
+                                if (videoPlayerRef.current) {
+                                  videoPlayerRef.current.playbackRate = spd;
+                                }
+                                updateCurrentSlide((prev) => ({
+                                  ...prev,
+                                  videoTimeline: {
+                                    ...(prev.videoTimeline || DEFAULT_VIDEO_TIMELINE),
+                                    playbackRate: spd,
+                                  },
+                                }));
+                              }}
+                            >
+                              {spd}x
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="playback-controls-right">
+                        <button
+                          type="button"
+                          className={`btn-suite-icon ${currentSlide.videoTimeline?.muted ? "active" : ""}`}
+                          title={currentSlide.videoTimeline?.muted ? "Unmute" : "Mute"}
+                          onClick={() => {
+                            const newMuted = !currentSlide.videoTimeline?.muted;
+                            if (videoPlayerRef.current) {
+                              videoPlayerRef.current.muted = newMuted;
+                            }
+                            updateCurrentSlide((prev) => ({
+                              ...prev,
+                              videoTimeline: {
+                                ...(prev.videoTimeline || DEFAULT_VIDEO_TIMELINE),
+                                muted: newMuted,
+                              },
+                            }));
+                          }}
+                        >
+                          {currentSlide.videoTimeline?.muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                        </button>
+
+                        <button
+                          type="button"
+                          className={`btn-suite-icon ${showSafeGuides ? "active" : ""}`}
+                          title="Toggle Safe Framing Guides"
+                          onClick={() => setShowSafeGuides(!showSafeGuides)}
+                        >
+                          <Grid3X3 size={15} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -1024,9 +1729,7 @@ export function NinaStudioEditor({
                     brushSize={brushSize}
                     comparing={comparing}
                     showSafeGuides={showSafeGuides}
-                    onExportReady={(fn) => {
-                      exportPhotoRef.current = fn;
-                    }}
+                    onExportReady={handleExportReady}
                     onTransformChange={(newT) => {
                       updateCurrentSlide((prev) => ({
                         ...prev,
@@ -1132,8 +1835,11 @@ export function NinaStudioEditor({
                   <input
                     type="file"
                     multiple
-                    accept="image/jpeg,image/png,image/webp,video/mp4"
+                    accept="image/*,video/*,.mp4,.mov,.webm,.m4v,.jpeg,.jpg,.png,.webp"
                     style={{ display: "none" }}
+                    onClick={(e) => {
+                      (e.target as HTMLInputElement).value = "";
+                    }}
                     onChange={(e) => {
                       if (e.target.files) void handleAddSlideFiles(e.target.files);
                     }}
@@ -1936,9 +2642,11 @@ export function NinaStudioEditor({
                             }
                             updateCurrentSlide((prev) => ({
                               ...prev,
-                              videoTimeline: prev.videoTimeline
-                                ? { ...prev.videoTimeline, trimStart: newStart, trimEnd: newEnd }
-                                : undefined,
+                              videoTimeline: {
+                                ...(prev.videoTimeline || DEFAULT_VIDEO_TIMELINE),
+                                trimStart: newStart,
+                                trimEnd: newEnd,
+                              },
                             }));
                           }}
                         >
@@ -1959,9 +2667,10 @@ export function NinaStudioEditor({
                             const cur = videoPlayerRef.current?.currentTime || 0;
                             updateCurrentSlide((prev) => ({
                               ...prev,
-                              videoTimeline: prev.videoTimeline
-                                ? { ...prev.videoTimeline, trimStart: cur }
-                                : undefined,
+                              videoTimeline: {
+                                ...(prev.videoTimeline || DEFAULT_VIDEO_TIMELINE),
+                                trimStart: cur,
+                              },
                             }));
                           }}
                         >
@@ -1981,9 +2690,10 @@ export function NinaStudioEditor({
                           }
                           updateCurrentSlide((prev) => ({
                             ...prev,
-                            videoTimeline: prev.videoTimeline
-                              ? { ...prev.videoTimeline, trimStart: val }
-                              : undefined,
+                            videoTimeline: {
+                              ...(prev.videoTimeline || DEFAULT_VIDEO_TIMELINE),
+                              trimStart: val,
+                            },
                           }));
                         }}
                       />
@@ -2001,9 +2711,10 @@ export function NinaStudioEditor({
                             const cur = videoPlayerRef.current?.currentTime || (currentSlide.videoTimeline?.duration || 0);
                             updateCurrentSlide((prev) => ({
                               ...prev,
-                              videoTimeline: prev.videoTimeline
-                                ? { ...prev.videoTimeline, trimEnd: cur }
-                                : undefined,
+                              videoTimeline: {
+                                ...(prev.videoTimeline || DEFAULT_VIDEO_TIMELINE),
+                                trimEnd: cur,
+                              },
                             }));
                           }}
                         >
@@ -2020,9 +2731,10 @@ export function NinaStudioEditor({
                           const val = Number(e.target.value);
                           updateCurrentSlide((prev) => ({
                             ...prev,
-                            videoTimeline: prev.videoTimeline
-                              ? { ...prev.videoTimeline, trimEnd: val }
-                              : undefined,
+                            videoTimeline: {
+                              ...(prev.videoTimeline || DEFAULT_VIDEO_TIMELINE),
+                              trimEnd: val,
+                            },
                           }));
                         }}
                       />
@@ -2047,9 +2759,10 @@ export function NinaStudioEditor({
                           }
                           updateCurrentSlide((prev) => ({
                             ...prev,
-                            videoTimeline: prev.videoTimeline
-                              ? { ...prev.videoTimeline, playbackRate: sp }
-                              : undefined,
+                            videoTimeline: {
+                              ...(prev.videoTimeline || DEFAULT_VIDEO_TIMELINE),
+                              playbackRate: sp,
+                            },
                           }));
                         }}
                       >
@@ -2072,9 +2785,10 @@ export function NinaStudioEditor({
                         }
                         updateCurrentSlide((prev) => ({
                           ...prev,
-                          videoTimeline: prev.videoTimeline
-                            ? { ...prev.videoTimeline, muted: nextMuted }
-                            : undefined,
+                          videoTimeline: {
+                            ...(prev.videoTimeline || DEFAULT_VIDEO_TIMELINE),
+                            muted: nextMuted,
+                          },
                         }));
                       }}
                     >
@@ -2151,11 +2865,32 @@ export function NinaStudioEditor({
                 onClick={() => setActiveSlideIndex(idx)}
               >
                 {s.type === "video" ? (
-                  <div className="thumb-video-icon">
-                    <VideoIcon size={14} />
+                  <div className="carousel-thumb-video-wrap">
+                    {s.coverUrl ? (
+                      <img
+                        src={s.coverUrl}
+                        alt={s.name}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="carousel-thumb-placeholder">
+                        <VideoIcon size={20} />
+                      </div>
+                    )}
+                    <div className="thumb-video-icon-badge">
+                      <VideoIcon size={11} />
+                    </div>
                   </div>
                 ) : (
-                  <img src={s.sourceUrl} alt={s.name} />
+                  <img
+                    src={s.sourceUrl}
+                    alt={s.name}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = "none";
+                    }}
+                  />
                 )}
 
                 <span className="slide-num">{idx + 1}</span>
@@ -2207,9 +2942,14 @@ export function NinaStudioEditor({
               <input
                 type="file"
                 multiple
-                accept="image/jpeg,image/png,image/webp,video/mp4"
+                accept="image/*,video/*,.mp4,.mov,.webm,.m4v,.jpeg,.jpg,.png,.webp"
                 style={{ display: "none" }}
-                onChange={(e) => handleAddSlideFiles(e.target.files)}
+                onClick={(e) => {
+                  (e.target as HTMLInputElement).value = "";
+                }}
+                onChange={(e) => {
+                  if (e.target.files) void handleAddSlideFiles(e.target.files);
+                }}
               />
             </label>
           </div>

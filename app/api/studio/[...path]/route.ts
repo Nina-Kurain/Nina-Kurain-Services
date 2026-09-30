@@ -9,10 +9,114 @@ import { emailReady,membershipEmail,safelySendTransactionalEmail,sendTransaction
 import { billingStatus, provider } from "@/lib/server/billing";
 import { deleteDriveFile,disconnectDrive,driveConnection,googleDriveConfigured,uploadToDrive,getDriveStorageQuota,emptyDriveTrash } from "@/lib/server/google-drive";
 import { getDatabaseStorageStats,cleanDatabaseStorage } from "@/lib/server/storage";
+import { screenUpload } from "@/lib/server/moderation";
 type Context={params:Promise<{path:string[]}>};
 const postInput=z.object({id:z.string().max(100).optional(),title:z.string().trim().min(1).max(160),caption:z.string().max(5000),status:z.enum(["draft","published","scheduled","archived"]),published_at:z.number().finite(),access_mode:z.enum(["free","level","specific"]),minimum_level:z.number().int().min(0).max(3),comment_level:z.number().int().min(-1).max(3),plan_ids:z.array(z.string()).max(4),media_ids:z.array(z.string()).min(1).max(20),cover_id:z.string()});
 const storyInput=z.object({title:z.string().trim().min(1).max(80),caption:z.string().max(1000),access_mode:z.enum(["free","level","specific"]),minimum_level:z.number().int().min(0).max(3),plan_ids:z.array(z.string()).max(4),media_id:z.string(),highlight:z.boolean()});
 const optionalHttpsUrl=z.preprocess(val=>{if(val===undefined||val===null)return "";if(typeof val!=="string")return String(val);const t=val.trim();if(!t)return "";if(!/^https?:\/\//i.test(t))return `https://${t}`;return t;},z.string().max(300).refine(value=>{if(!value)return true;try{const u=new URL(value);return u.protocol==="https:"||u.protocol==="http:";}catch{return false;}},{message:"Use a complete https:// link."}).optional().default(""));
+async function getStudioAnalytics() {
+  const now = Date.now();
+  const ninetyDaysAgo = now - 90 * 24 * 60 * 60 * 1000;
+
+  // 1. Fetch all paid payments in the last 90 days
+  const paidPayments = await rows<{ amount: number; ts: number }>(
+    "SELECT amount, COALESCE(paid_at, created_at) AS ts FROM payments WHERE status = 'paid' AND COALESCE(paid_at, created_at) >= ? ORDER BY ts ASC",
+    ninetyDaysAgo
+  );
+
+  // 2. Fetch all user signups in the last 90 days
+  const userSignups = await rows<{ ts: number }>(
+    "SELECT created_at AS ts FROM users WHERE role = 'member' AND active = 1 AND created_at >= ? ORDER BY ts ASC",
+    ninetyDaysAgo
+  );
+
+  // 3. Prior cumulative baseline before 90 days ago
+  const priorRevenue = (await row<{ rev: number }>(
+    "SELECT COALESCE(SUM(amount), 0) AS rev FROM payments WHERE status = 'paid' AND COALESCE(paid_at, created_at) < ?",
+    ninetyDaysAgo
+  ))?.rev || 0;
+
+  const priorUsers = (await row<{ cnt: number }>(
+    "SELECT COUNT(*) AS cnt FROM users WHERE role = 'member' AND active = 1 AND created_at < ?",
+    ninetyDaysAgo
+  ))?.cnt || 0;
+
+  // 4. Group by calendar date (YYYY-MM-DD)
+  const dayMap = new Map<string, { revenue: number; newMembers: number }>();
+  for (let i = 89; i >= 0; i--) {
+    const d = new Date(now - i * 86400000);
+    const key = d.toISOString().slice(0, 10);
+    dayMap.set(key, { revenue: 0, newMembers: 0 });
+  }
+
+  for (const p of paidPayments) {
+    const key = new Date(p.ts).toISOString().slice(0, 10);
+    const entry = dayMap.get(key);
+    if (entry) {
+      entry.revenue += (p.amount || 0) / 100;
+    }
+  }
+
+  for (const u of userSignups) {
+    const key = new Date(u.ts).toISOString().slice(0, 10);
+    const entry = dayMap.get(key);
+    if (entry) {
+      entry.newMembers += 1;
+    }
+  }
+
+  let runningRev = priorRevenue / 100;
+  let runningUsers = priorUsers;
+  const timeseries = Array.from(dayMap.entries()).map(([dateStr, val]) => {
+    runningRev += val.revenue;
+    runningUsers += val.newMembers;
+    const [y, m, d] = dateStr.split("-");
+    const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+    const label = dateObj.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+    return {
+      date: dateStr,
+      label,
+      revenue: val.revenue,
+      cumulativeRevenue: Math.round(runningRev),
+      newMembers: val.newMembers,
+      cumulativeMembers: runningUsers,
+    };
+  });
+
+  // 5. Real top posts by engagement
+  const topPosts = await rows<{ id: string; title: string; published_at: number; likes_count: number; comments_count: number }>(
+    `SELECT p.id, p.title, p.published_at,
+            (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS likes_count,
+            (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id AND c.deleted_at IS NULL) AS comments_count
+     FROM posts p
+     WHERE p.is_story = 0 AND p.status IN ('published', 'scheduled')
+     ORDER BY (likes_count + comments_count) DESC, p.published_at DESC
+     LIMIT 5`
+  );
+
+  // 6. Real totals
+  const totalEngagement = await row<{ total_likes: number; total_comments: number; total_bookmarks: number }>(
+    `SELECT (SELECT COUNT(*) FROM likes) AS total_likes,
+            (SELECT COUNT(*) FROM comments WHERE deleted_at IS NULL) AS total_comments,
+            (SELECT COUNT(*) FROM saved_posts) AS total_bookmarks`
+  );
+
+  const allTimeRevenue = (await row<{ total: number }>(
+    "SELECT COALESCE(SUM(amount), 0) AS total FROM payments WHERE status = 'paid'"
+  ))?.total || 0;
+
+  return {
+    timeseries,
+    topPosts,
+    totalEngagement: {
+      likes: totalEngagement?.total_likes || 0,
+      comments: totalEngagement?.total_comments || 0,
+      bookmarks: totalEngagement?.total_bookmarks || 0,
+    },
+    allTimeRevenue: allTimeRevenue / 100,
+  };
+}
+
 export async function GET(request:Request,ctx:Context){return endpoint(async()=>{const u=await apiAccount(true),{path}=await ctx.params,url=new URL(request.url);
   if(path[0]==="overview"){
     const users=await row("SELECT COUNT(*) AS total_users,SUM(verified=0) AS unverified_users FROM users WHERE role='member' AND active=1");
@@ -20,7 +124,8 @@ export async function GET(request:Request,ctx:Context){return endpoint(async()=>
     const stats=await row("SELECT COUNT(*) AS total_posts,SUM(status='draft') AS draft_posts,SUM(status IN ('published','scheduled') AND published_at<=?) AS published_posts FROM posts WHERE is_story=0",now);
     const revenue=await row("SELECT COALESCE(SUM(amount),0) AS revenue FROM payments WHERE status='paid' AND paid_at>=?",new Date(new Date().getFullYear(),new Date().getMonth(),1).getTime());
     const subscriptions=await row("SELECT SUM(status='active' AND current_period_end>?) AS active_memberships,SUM(status='grace_period' AND grace_ends_at>?) AS grace_memberships,SUM(status='expired' OR (current_period_end<=? AND (grace_ends_at IS NULL OR grace_ends_at<=?))) AS expired_memberships FROM subscriptions s JOIN memberships m ON m.subscription_id=s.id",now,now,now,now);
-    return json({users,members,stats,revenue,subscriptions,activity:await rows("SELECT action,entity_id,created_at FROM admin_activity ORDER BY created_at DESC LIMIT 12"),emailReady:emailReady(),billing:billingStatus(),testAccounts:false});
+    const analytics=await getStudioAnalytics();
+    return json({users,members,stats,revenue,subscriptions,analytics,activity:await rows("SELECT action,entity_id,created_at FROM admin_activity ORDER BY created_at DESC LIMIT 12"),emailReady:emailReady(),billing:billingStatus(),testAccounts:false});
   }
   if(path[0]==="posts"){const list=await rows<ContentPost>("SELECT * FROM posts WHERE is_story=0 ORDER BY created_at DESC LIMIT 500");for(const p of list)p.plan_ids=(await rows<{plan_id:string}>("SELECT plan_id FROM post_access WHERE post_id=?",p.id)).map(x=>x.plan_id);await attachMedia(u,list,true);return json({posts:list});}
   if(path[0]==="profile"){
@@ -32,9 +137,11 @@ export async function GET(request:Request,ctx:Context){return endpoint(async()=>
     return json({creator:{name:config.creator_name??"Nina Kurain",bio:config.creator_bio??"A private collection of photographs, films and personal notes.",avatar,socials:{instagram:config.creator_instagram??"",youtube:config.creator_youtube??"",facebook:config.creator_facebook??"",pinterest:config.creator_pinterest??"",x:config.creator_x??"",website:config.creator_website??""}},posts:list,plans:await getPlans(true)});
   }
   if(path[0]==="stories"){const list=await rows<ContentPost>("SELECT * FROM posts WHERE is_story=1 ORDER BY is_highlight DESC,created_at DESC LIMIT 500");for(const p of list)p.plan_ids=(await rows<{plan_id:string}>("SELECT plan_id FROM post_access WHERE post_id=?",p.id)).map(x=>x.plan_id);await attachMedia(u,list,true);return json({stories:list,plans:await getPlans(true)});}
-  if(path[0]==="media"){const assets=await rows<{id:string;name:string;mime:string;bytes:number;created_at:number}>("SELECT id,name,mime,bytes,created_at FROM media_assets ORDER BY created_at DESC LIMIT 500");return json({media:await Promise.all(assets.map(async a=>({...a,url:await mediaUrl(u,a.id,"",true)})))});}
+   if(path[0]==="media"){const assets=await rows<{id:string;name:string;mime:string;bytes:number;created_at:number;moderation_status:string;moderation_reason:string|null;content_origin:string;ai_label:string|null}>("SELECT id,name,mime,bytes,created_at,moderation_status,moderation_reason,content_origin,ai_label FROM media_assets ORDER BY created_at DESC LIMIT 500");return json({media:await Promise.all(assets.map(async a=>({...a,url:await mediaUrl(u,a.id,"",true)})))});}
+   if(path[0]==="moderation"){const [media,reports]=await Promise.all([rows("SELECT id,name,mime,bytes,created_by,moderation_status,moderation_reason,content_origin,ai_label,created_at,reviewed_at FROM media_assets WHERE moderation_status!='approved' ORDER BY created_at ASC LIMIT 500"),rows("SELECT * FROM moderation_reports WHERE status IN ('received','under_review') ORDER BY CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 ELSE 2 END,created_at ASC LIMIT 500")]);return json({media,reports});}
   if(path[0]==="plans")return json({plans:await getPlans(true)});
-  if(path[0]==="members"){const list=await rows("SELECT u.id,u.email,u.display_name,u.phone,u.verified,u.active,u.comments_blocked,u.created_at,s.id AS subscription_id,s.plan_id,s.provider,s.status,s.current_period_end,s.grace_ends_at,s.cancel_at_period_end FROM users u LEFT JOIN memberships m ON m.user_id=u.id LEFT JOIN subscriptions s ON s.id=m.subscription_id WHERE u.role='member' ORDER BY u.created_at DESC LIMIT 1000");return json({members:list});}
+   if(path[0]==="members"){const list=await rows("SELECT u.id,u.email,u.display_name,u.phone,u.verified,u.active,u.comments_blocked,u.created_at,s.id AS subscription_id,s.plan_id,s.provider,s.status,s.current_period_end,s.grace_ends_at,s.cancel_at_period_end FROM users u LEFT JOIN memberships m ON m.user_id=u.id LEFT JOIN subscriptions s ON s.id=m.subscription_id WHERE u.role='member' ORDER BY u.created_at DESC LIMIT 1000");return json({members:list});}
+   if(path[0]==="creator-applications"){return json({applications:await rows("SELECT ca.*,u.email,u.display_name,u.phone FROM creator_applications ca JOIN users u ON u.id=ca.user_id ORDER BY ca.updated_at DESC LIMIT 500"),platformFeePercent:10});}
   if(path[0]==="member"){const id=path[1];return json({user:await row("SELECT id,email,display_name,phone,verified,active,comments_blocked,created_at FROM users WHERE id=? AND role='member'",id),subscriptions:await rows("SELECT * FROM subscriptions WHERE user_id=? ORDER BY created_at DESC",id),payments:await rows("SELECT * FROM payments WHERE user_id=? ORDER BY created_at DESC",id),activity:await rows("SELECT action,detail,created_at FROM admin_activity WHERE entity_id=? ORDER BY created_at DESC LIMIT 100",id)});}
   if(path[0]==="payments")return json({payments:await rows("SELECT p.*,u.display_name,u.email FROM payments p LEFT JOIN users u ON u.id=p.user_id ORDER BY p.created_at DESC LIMIT 1000")});
   if(path[0]==="settings"){
@@ -109,10 +216,29 @@ export async function GET(request:Request,ctx:Context){return endpoint(async()=>
       raw:remote
     });
   }
+  if(path[0]==="media-url"){
+    const assetId = url.searchParams.get("id");
+    if(!assetId) throw new HttpError(400, "Asset ID required.");
+    const asset = await row<{id:string;name:string;mime:string;bytes:number}>("SELECT id,name,mime,bytes FROM media_assets WHERE id=?", assetId);
+    if(!asset) throw new HttpError(404, "Asset not found.");
+    return json({
+      id: asset.id,
+      name: asset.name,
+      mime: asset.mime,
+      bytes: asset.bytes,
+      url: await mediaUrl(u, asset.id, "", true)
+    });
+  }
   if(path[0]==="projects"||path[0]==="editor"){
     try {
       const list=await rows<{id:string;owner_id:string;project_type:string;title:string;status:string;aspect_ratio:string;width:number;height:number;duration_ms:number;created_at:number;updated_at:number}>("SELECT * FROM media_projects WHERE owner_id=? ORDER BY updated_at DESC LIMIT 100",u.id);
-      const items=await rows<{id:string;project_id:string;source_media_id:string|null;output_media_id:string|null;cover_media_id:string|null;position:number;edit_recipe_json:string;version:number;created_at:number;updated_at:number}>("SELECT * FROM media_project_items ORDER BY position ASC");
+      const items=await rows<{id:string;project_id:string;source_media_id:string|null;output_media_id:string|null;cover_media_id:string|null;position:number;edit_recipe_json:string;version:number;name:string;mime:string;bytes:number;created_at:number;updated_at:number}>(
+        `SELECT mpi.*, COALESCE(ma_out.name, ma_src.name, 'Media') AS name, COALESCE(ma_out.mime, ma_src.mime, '') AS mime, COALESCE(ma_out.bytes, ma_src.bytes, 0) AS bytes
+         FROM media_project_items mpi
+         LEFT JOIN media_assets ma_out ON ma_out.id = mpi.output_media_id
+         LEFT JOIN media_assets ma_src ON ma_src.id = mpi.source_media_id
+         ORDER BY mpi.position ASC`
+      );
       const itemsByProject=new Map<string,any[]>();
       for(const item of items){
         const arr=itemsByProject.get(item.project_id)??[];
@@ -139,7 +265,15 @@ export async function GET(request:Request,ctx:Context){return endpoint(async()=>
     if(!id)throw new HttpError(400,"Project ID required.");
     const project=await row<{id:string;owner_id:string;project_type:string;title:string;status:string;aspect_ratio:string;width:number;height:number;duration_ms:number;created_at:number;updated_at:number}>("SELECT * FROM media_projects WHERE id=? AND owner_id=?",id,u.id);
     if(!project)throw new HttpError(404,"Project not found.");
-    const items=await rows<{id:string;project_id:string;source_media_id:string|null;output_media_id:string|null;cover_media_id:string|null;position:number;edit_recipe_json:string;version:number;created_at:number;updated_at:number}>("SELECT * FROM media_project_items WHERE project_id=? ORDER BY position ASC",id);
+    const items=await rows<{id:string;project_id:string;source_media_id:string|null;output_media_id:string|null;cover_media_id:string|null;position:number;edit_recipe_json:string;version:number;name:string;mime:string;bytes:number;created_at:number;updated_at:number}>(
+      `SELECT mpi.*, COALESCE(ma_out.name, ma_src.name, 'Media') AS name, COALESCE(ma_out.mime, ma_src.mime, '') AS mime, COALESCE(ma_out.bytes, ma_src.bytes, 0) AS bytes
+       FROM media_project_items mpi
+       LEFT JOIN media_assets ma_out ON ma_out.id = mpi.output_media_id
+       LEFT JOIN media_assets ma_src ON ma_src.id = mpi.source_media_id
+       WHERE mpi.project_id=?
+       ORDER BY mpi.position ASC`,
+      id
+    );
     const withUrls=await Promise.all(items.map(async it=>({
       ...it,
       source_url:it.source_media_id?await mediaUrl(u,it.source_media_id,"",true):null,
@@ -152,10 +286,23 @@ export async function GET(request:Request,ctx:Context){return endpoint(async()=>
 });}
 export async function POST(request:Request,ctx:Context){return endpoint(async()=>{sameOrigin(request);const u=await apiAccount(true);await rateLimit(`admin:${u.id}`,200,60);const {path}=await ctx.params;
   if(path[0]==="upload"){
-    if(Number(request.headers.get("content-length"))>MAX_UPLOAD_BYTES+65536)throw new HttpError(413,"Files must be 25 MB or smaller.");const data=await request.formData();const file=data.get("file");if(!(file instanceof File)||!file.size||file.size>MAX_UPLOAD_BYTES)throw new HttpError(400,"Choose an image or MP4 up to 25 MB.");const kind=detectMedia(new Uint8Array(await file.slice(0,16).arrayBuffer()));if(!kind)throw new HttpError(415,"Use JPEG, PNG, WebP or MP4.");const category=data.get("category");const id=crypto.randomUUID(),drive=await driveConnection();let key:string;if(drive){const driveId=await uploadToDrive(new File([file],file.name,{type:kind.mime}),typeof category==="string"?category:undefined);key=`gdrive:${driveId}`;}else{if(!env.BUCKET)throw new HttpError(503,"Media storage unavailable. Connect Google Drive or configure the existing private store.");key=`members/${id}`;await env.BUCKET.put(key,file.stream(),{httpMetadata:{contentType:kind.mime}});}try{await database().batch([sql("INSERT INTO media_assets(id,storage_key,name,mime,bytes,created_by,created_at) VALUES(?,?,?,?,?,?,?)",id,key,file.name.slice(0,160),kind.mime,file.size,u.id,Date.now()),audit(u.id,"upload-media",id,{name:file.name,size:file.size,provider:drive?"google_drive":"private_store",category:typeof category==="string"?category:null})]);}catch(e){if(key.startsWith("gdrive:"))await deleteDriveFile(key.slice(7));else await env.BUCKET?.delete(key);throw e;}return json({id,name:file.name,mime:kind.mime,url:await mediaUrl(u,id,"",true),provider:drive?"google_drive":"private_store"},201);
-  }
-  const v=await body(request),now=Date.now();
-  if(path[0]==="save"||path[0]==="like"){
+     if(Number(request.headers.get("content-length"))>MAX_UPLOAD_BYTES+65536)throw new HttpError(413,"Files must be 25 MB or smaller.");const data=await request.formData();const file=data.get("file");if(!(file instanceof File)||!file.size||file.size>MAX_UPLOAD_BYTES)throw new HttpError(400,"Choose an image or MP4 up to 25 MB.");const kind=detectMedia(new Uint8Array(await file.slice(0,512).arrayBuffer()),file.name||file.type);if(!kind)throw new HttpError(415,"Use JPEG, PNG, WebP or MP4.");const category=data.get("category");const screening=await screenUpload({name:file.name,mime:kind.mime,bytes:file.size});const id=crypto.randomUUID(),drive=await driveConnection();let key:string;if(drive){const driveId=await uploadToDrive(new File([file],file.name,{type:kind.mime}),typeof category==="string"?category:undefined);key=`gdrive:${driveId}`;}else{if(!env.BUCKET)throw new HttpError(503,"Media storage unavailable. Connect Google Drive or configure the existing private store.");key=`members/${id}`;await env.BUCKET.put(key,file.stream(),{httpMetadata:{contentType:kind.mime}});}try{await database().batch([sql("INSERT INTO media_assets(id,storage_key,name,mime,bytes,created_by,moderation_status,moderation_reason,content_origin,ai_label,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",id,key,file.name.slice(0,160),kind.mime,file.size,u.id,screening.status,screening.reason,"user_upload",screening.aiLabel,Date.now()),audit(u.id,"upload-media",id,{name:file.name,size:file.size,provider:drive?"google_drive":"private_store",category:typeof category==="string"?category:null,moderation:screening.status})]);}catch(e){if(key.startsWith("gdrive:"))await deleteDriveFile(key.slice(7));else await env.BUCKET?.delete(key);throw e;}return json({id,name:file.name,mime:kind.mime,moderationStatus:screening.status,moderationReason:screening.reason,url:await mediaUrl(u,id,"",true),provider:drive?"google_drive":"private_store"},201);
+   }
+   const v=await body(request),now=Date.now();
+   if(path[0]==="moderate-media"){
+     const input=z.object({id:z.string().max(100),decision:z.enum(["approved","rejected"]),reason:z.string().trim().min(3).max(500)}).parse(v);
+     const asset=await row<{id:string;storage_key:string;name:string}>("SELECT id,storage_key,name FROM media_assets WHERE id=?",input.id);if(!asset)throw new HttpError(404,"Media not found.");
+     if(input.decision==="rejected"){
+       try{if(asset.storage_key.startsWith("gdrive:"))await deleteDriveFile(asset.storage_key.slice(7));else await env.BUCKET?.delete(asset.storage_key);}catch{}
+       await database().batch([sql("DELETE FROM post_media WHERE asset_id=?",input.id),sql("DELETE FROM media_assets WHERE id=?",input.id),audit(u.id,"reject-media",input.id,{reason:input.reason})]);
+       return json({message:"Upload rejected and removed from private storage."});
+     }
+     await database().batch([sql("UPDATE media_assets SET moderation_status='approved',moderation_reason=?,reviewed_by=?,reviewed_at=? WHERE id=?",input.reason,u.id,now,input.id),audit(u.id,"approve-media",input.id,{reason:input.reason})]);return json({message:"Upload approved for publication."});
+   }
+   if(path[0]==="report-status"){
+     const input=z.object({id:z.string().max(100),status:z.enum(["received","under_review","actioned","rejected","appealed"])}).parse(v);if(!await row("SELECT id FROM moderation_reports WHERE id=?",input.id))throw new HttpError(404,"Report not found.");await database().batch([sql("UPDATE moderation_reports SET status=?,updated_at=? WHERE id=?",input.status,now,input.id),audit(u.id,"moderation-report-status",input.id,{status:input.status})]);return json({message:"Report status updated."});
+   }
+   if(path[0]==="save"||path[0]==="like"){
     const input=z.object({postId:z.string().max(100),selected:z.boolean()}).parse(v);
     if(!await row("SELECT id FROM posts WHERE id=? AND is_story=0",input.postId))throw new HttpError(404,"Post not found.");
     const table=path[0]==="save"?"saved_posts":"likes";
@@ -164,14 +311,14 @@ export async function POST(request:Request,ctx:Context){return endpoint(async()=
     return json({ok:true});
   }
   if(path[0]==="story"){
-    const p=storyInput.parse(v);if(p.access_mode==="level"&&p.minimum_level===0)throw new HttpError(400,"Choose a paid minimum tier or Free Demo.");if(p.access_mode==="specific"&&!p.plan_ids.length)throw new HttpError(400,"Select at least one plan.");if(!await row("SELECT id FROM media_assets WHERE id=?",p.media_id))throw new HttpError(400,"Choose an uploaded photo or video.");for(const plan of p.plan_ids)if(!await row("SELECT id FROM membership_plans WHERE id=?",plan))throw new HttpError(400,"Selected membership is missing.");
+     const p=storyInput.parse(v);if(p.access_mode==="level"&&p.minimum_level===0)throw new HttpError(400,"Choose a paid minimum tier or Free Demo.");if(p.access_mode==="specific"&&!p.plan_ids.length)throw new HttpError(400,"Select at least one plan.");const storyAsset=await row<{moderation_status:string}>("SELECT moderation_status FROM media_assets WHERE id=?",p.media_id);if(!storyAsset)throw new HttpError(400,"Choose an uploaded photo or video.");if(storyAsset.moderation_status!=="approved")throw new HttpError(409,"This upload is still in safety review and cannot be published yet.");for(const plan of p.plan_ids)if(!await row("SELECT id FROM membership_plans WHERE id=?",plan))throw new HttpError(400,"Selected membership is missing.");
     const id=crypto.randomUUID(),expires=p.highlight?null:now+86400000;await database().batch([sql("INSERT INTO posts(id,title,caption,visibility,status,access_mode,minimum_level,comment_level,published_at,is_story,is_highlight,story_expires_at,created_by,created_at,updated_at) VALUES(?,?,?,'custom','published',?,?,-1,?,1,?,?,?,?,?)",id,p.title,p.caption,p.access_mode,p.minimum_level,now,p.highlight?1:0,expires,u.id,now,now),...p.plan_ids.map(plan=>sql("INSERT INTO post_access(post_id,plan_id) VALUES(?,?)",id,plan)),sql("INSERT INTO post_media(id,post_id,asset_id,display_order,cover) VALUES(?,?,?,0,1)",crypto.randomUUID(),id,p.media_id),audit(u.id,"publish-story",id,{access:p.access_mode,level:p.minimum_level,plans:p.plan_ids,highlight:p.highlight})]);return json({id,message:p.highlight?"Highlight published permanently.":"Story published for 24 hours."});
   }
   if(path[0]==="story-highlight"){
     const input=z.object({id:z.string(),selected:z.boolean()}).parse(v);const story=await row<{id:string;created_at:number}>("SELECT id,created_at FROM posts WHERE id=? AND is_story=1",input.id);if(!story)throw new HttpError(404,"Story not found.");await database().batch([sql("UPDATE posts SET is_highlight=?,story_expires_at=?,updated_at=? WHERE id=?",input.selected?1:0,input.selected?null:story.created_at+86400000,now,input.id),audit(u.id,input.selected?"add-highlight":"remove-highlight",input.id,{})]);return json({message:input.selected?"Story added to highlights.":"Highlight removed. The original 24-hour expiry applies."});
   }
   if(path[0]==="post"){
-    const p=postInput.parse(v);if(p.status==="scheduled"&&p.published_at<=now)throw new HttpError(400,"Schedule a time in the future.");if(p.access_mode==="level"&&p.minimum_level===0)throw new HttpError(400,"Choose a paid minimum tier or Free Demo.");if(p.access_mode==="specific"&&!p.plan_ids.length)throw new HttpError(400,"Select at least one plan.");const mediaIds=[...new Set(p.media_ids)];for(const id of mediaIds)if(!await row("SELECT id FROM media_assets WHERE id=?",id))throw new HttpError(400,"Selected media is missing.");for(const id of p.plan_ids)if(!await row("SELECT id FROM membership_plans WHERE id=?",id))throw new HttpError(400,"Selected membership is missing.");if(!mediaIds.includes(p.cover_id))throw new HttpError(400,"Choose a cover from the attached media.");const id=p.id??crypto.randomUUID();if(p.id&&!await row("SELECT id FROM posts WHERE id=?",id))throw new HttpError(404,"Post not found.");const existing=await row<{updated_at:number}>("SELECT updated_at FROM posts WHERE id=?",id);if(existing&&v.expectedUpdatedAt!==existing.updated_at)throw new HttpError(409,"This post changed in another tab. Reload before editing.");
+     const p=postInput.parse(v);if(p.status==="scheduled"&&p.published_at<=now)throw new HttpError(400,"Schedule a time in the future.");if(p.access_mode==="level"&&p.minimum_level===0)throw new HttpError(400,"Choose a paid minimum tier or Free Demo.");if(p.access_mode==="specific"&&!p.plan_ids.length)throw new HttpError(400,"Select at least one plan.");const mediaIds=[...new Set(p.media_ids)];for(const id of mediaIds){const asset=await row<{moderation_status:string}>("SELECT moderation_status FROM media_assets WHERE id=?",id);if(!asset)throw new HttpError(400,"Selected media is missing.");if(["published","scheduled"].includes(p.status)&&asset.moderation_status!=="approved")throw new HttpError(409,"Every published upload must pass safety review first.");}for(const id of p.plan_ids)if(!await row("SELECT id FROM membership_plans WHERE id=?",id))throw new HttpError(400,"Selected membership is missing.");if(!mediaIds.includes(p.cover_id))throw new HttpError(400,"Choose a cover from the attached media.");const id=p.id??crypto.randomUUID();if(p.id&&!await row("SELECT id FROM posts WHERE id=?",id))throw new HttpError(404,"Post not found.");const existing=await row<{updated_at:number}>("SELECT updated_at FROM posts WHERE id=?",id);if(existing&&v.expectedUpdatedAt!==existing.updated_at)throw new HttpError(409,"This post changed in another tab. Reload before editing.");
     const ops=[sql("INSERT INTO posts(id,title,caption,visibility,status,access_mode,minimum_level,comment_level,published_at,created_by,created_at,updated_at) VALUES(?,?,?,'custom',?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,caption=excluded.caption,status=excluded.status,access_mode=excluded.access_mode,minimum_level=excluded.minimum_level,comment_level=excluded.comment_level,published_at=excluded.published_at,updated_at=excluded.updated_at",id,p.title,p.caption,p.status,p.access_mode,p.minimum_level,p.comment_level,p.published_at,u.id,now,now),sql("DELETE FROM post_access WHERE post_id=?",id),sql("DELETE FROM post_media WHERE post_id=?",id),...p.plan_ids.map(plan=>sql("INSERT INTO post_access(post_id,plan_id) VALUES(?,?)",id,plan)),...mediaIds.map((asset,i)=>sql("INSERT INTO post_media(id,post_id,asset_id,display_order,cover) VALUES(?,?,?,?,?)",crypto.randomUUID(),id,asset,i,asset===p.cover_id?1:0)),audit(u.id,"save-post",id,{status:p.status,access:p.access_mode,level:p.minimum_level,plans:p.plan_ids})];await database().batch(ops);return json({id,message:p.status==="draft"?"Draft saved.":p.status==="scheduled"?"Post scheduled.":p.status==="archived"?"Post archived.":"Post published."});
   }
   if(path[0]==="delete-post"){const id=z.string().parse(v.id);await database().batch([sql("DELETE FROM saved_posts WHERE post_id=?",id),sql("DELETE FROM likes WHERE post_id=?",id),sql("DELETE FROM comments WHERE post_id=?",id),sql("DELETE FROM post_access WHERE post_id=?",id),sql("DELETE FROM post_media WHERE post_id=?",id),sql("DELETE FROM posts WHERE id=?",id),audit(u.id,"delete-post",id,{})]);return json({message:"Post deleted."});}
@@ -217,11 +364,12 @@ export async function POST(request:Request,ctx:Context){return endpoint(async()=
     await initializePlans();
     const p=z.object({id:z.string(),name:z.string().trim().min(1).max(80),price:z.number().int().min(0).max(100000),description:z.string().max(500).optional().default(""),benefits:z.array(z.string().trim().min(1).max(200)).min(1).max(15),badge:z.string().max(40).optional().default(""),active:z.boolean(),display_order:z.number().int().min(0).max(20),level:z.number().int().min(0).max(3),discount_enabled:z.boolean().optional().default(false),discount_amount:z.number().int().min(0).max(100000).optional().default(0),discount_label:z.string().max(100).optional().nullable().default(null),discount_badge:z.string().max(40).optional().nullable().default(null),discount_ends_at:z.number().int().nullable().optional().default(null)}).parse(v);const current=await row<{id:string;price:number}>("SELECT id,price FROM membership_plans WHERE id=?",p.id);if(!current)throw new HttpError(404,"Plan not found.");if(p.id==="free"&&(p.price!==0||p.level!==0||!p.active))throw new HttpError(400,"The Free plan must stay active at ₹0 and level 0.");if(p.id!=="free"&&(p.price<1||p.level<1))throw new HttpError(400,"Paid plans need a price and level above zero.");const discEnabled=p.id==="free"?0:p.discount_enabled?1:0;const discAmount=p.id==="free"?0:p.discount_amount;await database().batch([sql("UPDATE membership_plans SET name=?,price=?,description=?,benefits=?,badge=?,active=?,display_order=?,level=?,provider_plan_id=CASE WHEN price<>? THEN NULL ELSE provider_plan_id END,discount_enabled=?,discount_amount=?,discount_label=?,discount_badge=?,discount_ends_at=?,updated_at=? WHERE id=?",p.name,p.price,p.description,JSON.stringify(p.benefits),p.badge,p.active?1:0,p.display_order,p.level,p.price,discEnabled,discAmount,p.discount_label??null,p.discount_badge??null,p.discount_ends_at??null,now,p.id),audit(u.id,"edit-plan",p.id,p)]);return json({message:"Membership saved. Existing provider subscriptions retain their contracted price."});
   }
-  if(path[0]==="member"){
+   if(path[0]==="member"){
     const m=z.object({id:z.string(),plan_id:z.string(),days:z.number().int().min(1).max(3650),action:z.enum(["grant","revoke","extend"]),comments_blocked:z.boolean(),phone:z.string().trim().max(25).optional().nullable().transform(v=>v?v.trim():null),reason:z.string().trim().min(3).max(500)}).parse(v);const target=await row<{id:string;email:string;display_name:string}>("SELECT id,email,display_name FROM users WHERE id=? AND role='member' AND active=1",m.id);if(!target)throw new HttpError(404,"Member not found.");const plan=await row<{id:string;level:number;name:string}>("SELECT id,level,name FROM membership_plans WHERE id=?",m.plan_id);if(!plan)throw new HttpError(400,"Choose a membership.");const existing=await row<{id:string;provider:string;cancel_at_period_end:number;current_period_end:number}>("SELECT s.* FROM subscriptions s JOIN memberships m ON m.subscription_id=s.id WHERE m.user_id=?",m.id);
     if(existing?.provider==="razorpay"&&!existing.cancel_at_period_end)throw new HttpError(409,"Cancel the recurring provider subscription before replacing access with a manual grant.");
     const sub=crypto.randomUUID();const end=(m.action==="extend"?Math.max(now,existing?.current_period_end??0):now)+m.days*86400000;const ops=[sql("UPDATE users SET comments_blocked=?,phone=COALESCE(?,phone),updated_at=? WHERE id=?",m.comments_blocked?1:0,m.phone??null,now,m.id)];if(m.action==="revoke"||plan.level===0){if(existing)ops.push(sql("UPDATE subscriptions SET status='expired',current_period_end=?,grace_ends_at=NULL,updated_at=? WHERE id=?",now,now,existing.id));ops.push(sql("UPDATE memberships SET subscription_id=NULL,updated_at=? WHERE user_id=?",now,m.id));}else{ops.push(sql("INSERT INTO subscriptions(id,user_id,plan_id,provider,status,current_period_start,current_period_end,created_at,updated_at) VALUES(?,?,?,'complimentary','active',?,?,?,?)",sub,m.id,m.plan_id,now,end,now,now));ops.push(sql("INSERT INTO memberships(user_id,subscription_id,updated_at) VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET subscription_id=excluded.subscription_id,updated_at=excluded.updated_at",m.id,sub,now));}ops.push(audit(u.id,`membership-${m.action}`,m.id,m));ops.push(sql("INSERT INTO notifications(id,user_id,title,body,created_at) VALUES(?,?,?,?,?)",crypto.randomUUID(),m.id,"Your membership was updated","Your creator has updated your account access. Check your membership details.",now));await database().batch(ops);if(emailReady()){const content=membershipEmail("membership_updated",target.display_name,m.action==="revoke"?"Free":plan.name,`Creator note: ${m.reason}`);await safelySendTransactionalEmail({userId:m.id,email:target.email,kind:"membership_updated",idempotencyKey:`admin-membership:${sub}:${m.action}`,subject:content.subject,text:content.text});}return json({message:"Member access updated, emailed, and recorded in the activity log."});
-  }
+   }
+   if(path[0]==="creator-applications")return json({applications:await rows("SELECT ca.*,u.email,u.display_name,u.phone FROM creator_applications ca JOIN users u ON u.id=ca.user_id ORDER BY ca.updated_at DESC LIMIT 500"),platformFeePercent:10});
   if(path[0]==="test-email"){if(!emailReady())throw new HttpError(409,"Add MAIL_API_KEY and a verified MAIL_FROM address first.");await sendTransactionalEmail({userId:u.id,email:u.email,kind:"test",idempotencyKey:`test-email:${u.id}:${crypto.randomUUID()}`,subject:"Nina Kurain email automation is working",text:`Hi ${u.display_name.split(/\s+/)[0]||"Creator"},\n\nThis is a live delivery test from Nina Kurain's creator studio. Verification, password recovery, membership activation, renewal, grace-period and expiry emails can now be delivered.`});return json({message:`Test email sent to ${u.email}.`});}
   if(path[0]==="settings"){
     const s=z.object({

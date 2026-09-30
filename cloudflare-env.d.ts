@@ -7,6 +7,7 @@ declare namespace Cloudflare {
     MAIL_API_KEY?: string;
     MAIL_FROM?: string;
     MEDIA_SIGNING_SECRET?: string;
+    JWT_SECRET?: string;
     GOOGLE_DRIVE_CLIENT_ID?: string;
     GOOGLE_DRIVE_CLIENT_SECRET?: string;
     GOOGLE_DRIVE_TOKEN_ENCRYPTION_KEY?: string;
@@ -23,5 +24,10 @@ declare namespace Cloudflare {
     CRON_SECRET?: string;
     PINTEREST_SITE_VERIFICATION?: string;
     GOOGLE_ADSENSE_CLIENT?: string;
+    MODERATION_API_URL?: string;
+    MODERATION_API_KEY?: string;
+    AI_OPENAI_ADAPTER_URL?: string;
+    AI_GEMINI_ADAPTER_URL?: string;
+    AI_KLING_ADAPTER_URL?: string;
   }
 }
